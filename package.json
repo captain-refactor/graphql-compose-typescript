@@ -1,0 +1,40 @@
+{
+  "name": "graphql-compose-typescript",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "ava",
+    "test:watch": "ava --watch",
+    "check": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/graphql": "^14.0.5",
+    "@types/node": "^10.12.18",
+    "ava": "^1.1.0",
+    "graphql": "^14.1.1",
+    "graphql-compose": "^5.5.0",
+    "reflect-metadata": "^0.1.13",
+    "ts-node": "^7.0.1",
+    "ts-node-dev": "^1.0.0-pre.32",
+    "typescript": "^3.2.4"
+  },
+  "ava": {
+    "files": [
+      "tests/**/*.ts"
+    ],
+    "require": [
+      "ts-node/register/transpile-only"
+    ],
+    "compileEnhancements": false,
+    "extensions": [
+      "ts"
+    ]
+  },
+  "devDependencies": {
+    "injection-js": "^2.2.1"
+  }
+}
