@@ -1,6 +1,13 @@
-import {ClassType, getComposer, getOrCreateComposer, getPropertyTypeFromMetadata} from "../graphq-compose-typescript";
+import {
+    ClassType,
+    getComposer,
+    getOrCreateComposer, getParamNames,
+    getPropertyGraphqlType,
+    getPropertyType, mapArguments
+} from "../graphq-compose-typescript";
 import {ComposeOutputType} from "graphql-compose";
 import {Thunk} from "graphql-compose/lib/utils/definitions";
+import {GraphQLFieldResolver} from "graphql";
 
 
 export function $field(typeFn?: () => ComposeOutputType<any, any> | ClassType): PropertyDecorator {
@@ -13,18 +20,30 @@ export function $field(typeFn?: () => ComposeOutputType<any, any> | ClassType): 
             const type: Thunk<ComposeOutputType<any, any>> = () => {
                 if (typeFn) {
                     let providenType = typeFn();
-                    if(providenType instanceof Function){
+                    if (providenType instanceof Function) {
                         return getComposer(providenType)
                     }
                     return providenType;
                 }
-                return getPropertyTypeFromMetadata(constructor, propertyName)
+                return getPropertyGraphqlType(constructor, propertyName)
             };
-            composer.addFields({
-                [propertyName]: {
-                    type
-                }
-            })
+            const propertyType = getPropertyType(constructor, propertyName);
+            if (propertyType === Function) {
+                let resolver = composer.getResolver(propertyName);
+                resolver.setType(type());
+                resolver.setResolve(async rp => {
+                    let parameters = mapArguments(rp.args, getParamNames(constructor, propertyName));
+                    return await rp.source[propertyName](...parameters);
+                });
+                composer.addRelation(propertyName, resolver);
+            }else{
+                composer.addFields({
+                    [propertyName]: {
+                        type,
+                    }
+                })
+            }
+
         }
     };
 }

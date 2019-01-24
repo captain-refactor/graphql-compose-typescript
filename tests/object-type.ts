@@ -81,17 +81,18 @@ test('create field on class with arguments', async t => {
     @$objectType()
     class A {
         @$field()
-        greet(@$arg('name') name: string) {
+        greet(@$arg('name') name: string): string {
             return 'hello ' + name;
         }
     }
 
     let typeComposer = t.context.compose.getComposer(A);
+
     schemaComposer.Query.addFields({
         geta: {
             type: typeComposer.getType(),
             resolve() {
-                return new A;
+                return new A();
             }
         }
     });
@@ -101,6 +102,7 @@ test('create field on class with arguments', async t => {
             greet(name: "Jan")
         }
     }`);
+    t.falsy(result.errors);
     t.is(result.data.geta.greet, 'hello Jan');
 
 
