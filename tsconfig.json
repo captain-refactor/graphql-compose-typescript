@@ -5,7 +5,8 @@
     "sourceMap": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "lib": ["esnext"]
+    "lib": ["esnext"],
+    "declaration": true
   },
   "exclude": [
     "node_modules"

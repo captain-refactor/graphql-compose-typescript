@@ -126,13 +126,6 @@ export class GraphqlComposeTypescript<TContext = DefaultContext> {
         return getComposer(type);
     }
 
-    // createSchemaFromResolverTypes(types: ClassType[]) {
-    //     for (const type of types) {
-    //         let composer = this.getComposer(type);
-    //
-    //     }
-    // }
-
     static create() {
         return new GraphqlComposeTypescript();
     }
