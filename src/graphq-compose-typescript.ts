@@ -1,4 +1,4 @@
-import {ComposeInputType, ComposeOutputType, Resolver, TypeComposer} from "graphql-compose";
+import {ComposeInputType, ComposeOutputType, ResolveParams, Resolver, TypeComposer} from "graphql-compose";
 import {GraphQLOutputType} from "graphql";
 
 export type TypeFn = () => GraphQLOutputType | ClassType | TypeComposer;
@@ -43,7 +43,9 @@ export function getOrCreateResolver<T>(constructor: AnnotatedClass<T>, property:
     }
 }
 
-export function mapArguments(args: Dict<any>, paramNames: string[]) {
+export function mapArguments(rp: Partial<ResolveParams<any, any>>, paramNames: string[]) {
+    if (paramNames.length === 0) return [];
+    let args = rp.args || {};
     let parameters = [];
     for (const name of paramNames) {
         parameters.push(args[name]);

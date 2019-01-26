@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "ava",
+    "test": "npm run check && ava",
     "test:watch": "ava --watch",
     "check": "tsc --noEmit",
     "build": "tsc",
-    "prepublish": "npm run test && npm run build"
+    "prepublish": "npm run build"
   },
   "keywords": [],
   "author": "",

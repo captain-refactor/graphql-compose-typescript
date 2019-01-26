@@ -25,7 +25,7 @@ export function $resolver<T>(typeFn?: TypeFn): PropertyDecorator {
                 return 'safd';
                 throw new InstanceMissing(constructor);
             }
-            let parameters = mapArguments(rp.args, getParamNames(constructor, propertyKey));
+            let parameters = mapArguments(rp, getParamNames(constructor, propertyKey));
             return instance[propertyKey](...parameters);
         });
     };

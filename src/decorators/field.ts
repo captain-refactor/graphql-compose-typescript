@@ -19,7 +19,7 @@ export function $field(typeFn?: TypeFn): PropertyDecorator {
                 let resolver = getOrCreateResolver(constructor, propertyName);
                 resolver.setType(type);
                 resolver.setResolve(async rp => {
-                    let parameters = mapArguments(rp.args, getParamNames(constructor, propertyName));
+                    let parameters = mapArguments(rp, getParamNames(constructor, propertyName));
                     return await rp.source[propertyName](...parameters);
                 });
                 composer.addRelation(propertyName, resolver);
