@@ -6,7 +6,6 @@ import {
 
 
 export function $arg(name: string): ParameterDecorator {
-    console.log(name);
     return (target, propertyKey: string, parameterIndex: number) => {
         const constructor: ClassType = target.constructor as any;
         let resolver = getOrCreateResolver(constructor, propertyKey);

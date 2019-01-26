@@ -1,3 +1,4 @@
 export {$field} from "./decorators/field";
-export {$objectType} from "./decorators/object-type";
+export {$arg} from "./decorators/arg";
+export {$resolver} from "./decorators/resolver";
 export {GraphqlComposeTypescript} from './graphq-compose-typescript';

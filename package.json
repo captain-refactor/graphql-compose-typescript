@@ -13,8 +13,7 @@
   "keywords": [],
   "author": "",
   "license": "MIT",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "ts-node": "^7.0.1",
     "@types/graphql": "^14.0.5",
@@ -36,7 +35,9 @@
       "tests/**/*.ts",
       "!**/*.d.ts"
     ],
+    "sources": ["src/**/*.ts"],
     "require": [
+      "reflect-metadata",
       "ts-node/register/transpile-only"
     ],
     "compileEnhancements": false,

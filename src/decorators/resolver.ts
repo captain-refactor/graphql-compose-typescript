@@ -1,13 +1,32 @@
-import {ClassType, getOrCreateComposer} from "../graphq-compose-typescript";
-import {Resolver} from "graphql-compose";
+import {
+    ClassType,
+    DefaultContext, getComposer,
+    getOrCreateComposer, getOrCreateResolver, getParamNames,
+    getPropertyGraphqlType,
+    mapArguments, TypeFn
+} from "../graphq-compose-typescript";
+import {ComposeOutputType, Resolver} from "graphql-compose";
 
-export function $resolver<T>(): PropertyDecorator {
-    return (target: T, propertyKey) => {
+export class InstanceMissing extends Error {
+    constructor(type: ClassType) {
+        super(`Missing instance for ${type.name}.`);
+    }
+
+}
+
+export function $resolver<T>(typeFn?: TypeFn): PropertyDecorator {
+    return (target: T, propertyKey: string) => {
         const constructor = target.constructor as ClassType;
-        let composer = getOrCreateComposer(constructor);
-        let resolver = new Resolver({
-            name: propertyKey.toString(),
+        let resolver = getOrCreateResolver(constructor, propertyKey);
+        resolver.setType(getPropertyGraphqlType(constructor, propertyKey, typeFn));
+        resolver.setResolve(function (rp) {
+            const instance = rp.context.instance;
+            if (!instance) {
+                return 'safd';
+                throw new InstanceMissing(constructor);
+            }
+            let parameters = mapArguments(rp.args, getParamNames(constructor, propertyKey));
+            return instance[propertyKey](...parameters);
         });
-        composer.addResolver(resolver);
     };
 }

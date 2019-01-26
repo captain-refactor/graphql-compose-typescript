@@ -1,11 +1,15 @@
 import {ComposeInputType, ComposeOutputType, Resolver, TypeComposer} from "graphql-compose";
+import {GraphQLOutputType} from "graphql";
+
+export type TypeFn = () => GraphQLOutputType | ClassType | TypeComposer;
 
 export interface IContainer {
     get(type: Function): any;
 }
 
-export interface DefaultContext {
-    container: IContainer;
+export interface DefaultContext<T> {
+    // container: IContainer;
+    instance: T;
 }
 
 const COMPOSER = Symbol.for('GraphQL class metadata');
@@ -20,8 +24,12 @@ export type Dict<T, K extends string | symbol = string> = {
     [key in K]?: T;
 }
 
-export function getComposer<T>(type: ClassType<T>): TypeComposer<T> {
-    return type[COMPOSER];
+export function getComposer<T>(typeOrInstance: ClassType<T> | T): TypeComposer<T> {
+    return typeOrInstance[COMPOSER];
+}
+
+export function setComposer<T>(typeOrInstance: ClassType<T> | T, composer: TypeComposer<T>) {
+    typeOrInstance[COMPOSER] = composer;
 }
 
 export function getOrCreateResolver<T>(constructor: AnnotatedClass<T>, property: string) {
@@ -54,35 +62,39 @@ export function getParamNames(constructor: ClassType, property: string) {
     return method[PARAM_NAMES];
 }
 
-export function getOrCreateComposer<T>(type: AnnotatedClass<T>): TypeComposer<T> {
+export function getOrCreateComposer<T>(typeOrInstance: AnnotatedClass<T>): TypeComposer<T> {
 
     function getParentClass(type) {
         return type.__proto__;
     }
 
-    const composer = getComposer(type);
-    let parentComposer = getComposer(getParentClass(type));
+    const composer = getComposer(typeOrInstance);
+    let parentComposer = getComposer(getParentClass(typeOrInstance));
     if (!composer) {
-        type[COMPOSER] = TypeComposer.create({name: type.name})
+        setComposer(typeOrInstance, TypeComposer.createTemp({name: typeOrInstance.name}));
     } else if (composer === parentComposer) {
-        type[COMPOSER] = parentComposer.clone(type.name);
+        setComposer(typeOrInstance, parentComposer.clone(typeOrInstance.name));
     }
-    return type[COMPOSER];
+    return getComposer(typeOrInstance);
 }
 
 export function getReturnTypeFromMetadata(constructor: ClassType, property: string): ClassType {
-    let typeClass = Reflect.getOwnMetadata('design:returntype', constructor.prototype, property);
-    return typeClass;
+    return Reflect.getOwnMetadata('design:returntype', constructor.prototype, property);
 }
 
 export function getParameterTypesFromMetadata(constructor: ClassType, property: string): ClassType[] {
-    let typeClasses = Reflect.getOwnMetadata('design:paramtypes', constructor.prototype, property);
-    return typeClasses;
+    return Reflect.getOwnMetadata('design:paramtypes', constructor.prototype, property);
 }
 
-export class MethodNotAnnotated extends Error {
+export class TypeNotSpecified extends Error {
     constructor(constructor: Function, propertyName: string) {
         super(`${constructor.name}.${propertyName} does not have specified type`);
+    }
+}
+
+export class ArrayTypeNotSpecified extends Error {
+    constructor(constructor: Function, propertyName: string) {
+        super(`${constructor.name}.${propertyName} does not have specified array item type`);
     }
 }
 
@@ -90,20 +102,39 @@ export function getPropertyType(constructor: ClassType, property: string): Class
     return Reflect.getOwnMetadata('design:type', constructor.prototype, property);
 }
 
-export function getPropertyGraphqlType(constructor: ClassType, property: string): ComposeOutputType<any, any> {
+export function getPropertyGraphqlType(constructor: ClassType, property: string, providenTypeFn?: TypeFn): ComposeOutputType<any, any> {
+    let providenType: ComposeOutputType<any, any> | ClassType;
+    if (providenTypeFn) providenType = providenTypeFn();
+    if (providenType instanceof Function) {
+        providenType = getComposer(providenType);
+    }
+
     let typeClass: ClassType = getPropertyType(constructor, property);
 
     if (typeClass == Function) {
         typeClass = getReturnTypeFromMetadata(constructor, property);
         if (!typeClass) {
-            throw new MethodNotAnnotated(constructor, property);
+            throw new TypeNotSpecified(constructor, property);
         }
     }
-    return getGraphqlTypeFromClass(typeClass)
+
+    if (typeClass == Promise && !providenType) {
+        throw new TypeNotSpecified(constructor, property);
+    }
+
+    if (typeClass == Array) {
+        if (!providenType) throw new ArrayTypeNotSpecified(constructor, property);
+        if (Array.isArray(providenType)) {
+            return providenType;
+        } else {
+            return [providenType];
+        }
+    }
+    return providenType || getGraphqlTypeFromClass(typeClass)
 }
 
 export function getGraphqlTypeFromClass(typeClass: ClassType): ComposeOutputType<any, any> {
-    let type: any = getComposer(typeClass);
+    let type: ComposeOutputType<any, any> = getComposer(typeClass);
     if (type) return type;
     if (typeClass === Number) {
         type = 'Float';
@@ -121,9 +152,37 @@ export function toInputType(type: ComposeOutputType<any, any, any>): ComposeInpu
 
 }
 
-export class GraphqlComposeTypescript<TContext = DefaultContext> {
-    getComposer<T>(type: AnnotatedClass<T>): TypeComposer<T, TContext> {
-        return getComposer(type);
+export function createComposerForInstance<T>(instance: T, newName?: string): TypeComposer<T, DefaultContext<T>> {
+    function wrapAllResolvers(composer: TypeComposer) {
+        for (let name of composer.getResolvers().keys()) {
+            composer.wrapResolverResolve(name, next => rp => {
+                if (!rp.context) rp.context = {};
+                rp.context.instance = instance;
+                return next(rp);
+            });
+        }
+    }
+
+    const constructor = instance.constructor as ClassType<T>;
+    let composer = getComposer(constructor);
+    if (!composer) return composer;
+    const instanceComposer = composer.clone(newName || constructor.name + 'Instance');
+    wrapAllResolvers(instanceComposer);
+    setComposer(instance, instanceComposer);
+    return instanceComposer;
+}
+
+export function isInstance<T>(typeOrInstance: AnnotatedClass<T> | T): typeOrInstance is T {
+    return !(typeOrInstance.constructor === Function);
+}
+
+export class GraphqlComposeTypescript {
+    getComposer<T>(typeOrInstance: AnnotatedClass<T> | T): TypeComposer<T, DefaultContext<T>> {
+        let composer = getComposer(typeOrInstance);
+        if (!composer && isInstance(typeOrInstance)) {
+            composer = createComposerForInstance(typeOrInstance);
+        }
+        return composer;
     }
 
     static create() {

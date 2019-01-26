@@ -1,42 +1,29 @@
 import {
     ClassType,
-    getComposer,
-    getOrCreateComposer, getParamNames,
+    getOrCreateComposer, getOrCreateResolver, getParamNames,
     getPropertyGraphqlType,
-    getPropertyType, mapArguments
+    getPropertyType, mapArguments, TypeFn
 } from "../graphq-compose-typescript";
-import {ComposeOutputType} from "graphql-compose";
-import {Thunk} from "graphql-compose/lib/utils/definitions";
-import {GraphQLFieldResolver} from "graphql";
 
 
-export function $field(typeFn?: () => ComposeOutputType<any, any> | ClassType): PropertyDecorator {
+export function $field(typeFn?: TypeFn): PropertyDecorator {
     return (prototype: Object, propertyName: string) => {
 
         const constructor = prototype.constructor as ClassType;
 
         let composer = getOrCreateComposer(constructor);
         if (!composer.hasField(propertyName)) {
-            const type: Thunk<ComposeOutputType<any, any>> = () => {
-                if (typeFn) {
-                    let providenType = typeFn();
-                    if (providenType instanceof Function) {
-                        return getComposer(providenType)
-                    }
-                    return providenType;
-                }
-                return getPropertyGraphqlType(constructor, propertyName)
-            };
+            let type = getPropertyGraphqlType(constructor, propertyName, typeFn);
             const propertyType = getPropertyType(constructor, propertyName);
             if (propertyType === Function) {
-                let resolver = composer.getResolver(propertyName);
-                resolver.setType(type());
+                let resolver = getOrCreateResolver(constructor, propertyName);
+                resolver.setType(type);
                 resolver.setResolve(async rp => {
                     let parameters = mapArguments(rp.args, getParamNames(constructor, propertyName));
                     return await rp.source[propertyName](...parameters);
                 });
                 composer.addRelation(propertyName, resolver);
-            }else{
+            } else {
                 composer.addFields({
                     [propertyName]: {
                         type,
