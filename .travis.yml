@@ -1,8 +1,14 @@
 language: node_js
 node_js:
-  - "8"
-  - "10"
+- '8'
+- '10'
 cache: npm
 after_success:
-  - npm run coverage-report
-
+- npm run coverage-report
+deploy:
+  provider: npm
+  email: kremenh@gmail.com
+  on:
+    tags: true
+  api_key:
+    secure: rDGAgadsQcQ3xYuhMATcouDdAVwq8f0pFCKftFf7IFREcr3EVLHF3SdfHk3Ds0rXYBl4abOxCOLkYkrSyyP70dqfe5TkAHbaCHhiv4rzS7joBf68ryMGKFYTx2nQ6FbiijmbzALJIFBKTbKFWYBDc7m4kkQsQuyIYHH0oMEb8jr5Uf7C2U7Z8V+6p8em6MgzqEqo6T8rKowr4xR/Y5FwxngxOcHp6e0tLjfiEAZm2RsjWoByN2shq9GM9OPpRPpijbERQVBRfpWhnQx/awqrzjY58r8uWol5JMPGSaw4mmz64zA6cqRx/WVEWQbfSaxet4gevuFKfe9nFQyMaaThH3uUCLBkQH+WLEB8f+p7R6jNq3Hf7xcuu6dVSTdGd/rj5y6aDha7nMTlMd7AhRqyb7NoQb2vY2y3gQ3+3/QbPJSt+4JRb8rAVTjVjW3RbO37+R0RTdDQgXYJ8BrAfjkKenaDGGz2YbdKtpoeiZQJSevsYOnv0GRsaEW9+aITlKn1zQhOCpb30oU0kpby6NyTOMaLLToyufV0dzsZx0QF5+8wWbqaiJn1NdK0z+sKfpa0ImaZY0enxmWe6DLEmtkpXkbsrR3Gqojkr/vAKFeCs4Yjk/PMKu64J1ogEmtLRIsINU0zDinpPgeSuZwgSZzVaZQDX7U4xk98gMsO6VwXjq8=
