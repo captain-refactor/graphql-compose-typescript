@@ -1,6 +1,7 @@
 # GraphQL-compose-typescript
 [![Build Status](https://travis-ci.org/janexpando/graphql-compose-typescript.svg?branch=master)](https://travis-ci.org/janexpando/graphql-compose-typescript)
-
+[![codecov](https://codecov.io/gh/janexpando/graphql-compose-typescript/branch/master/graph/badge.svg)](https://codecov.io/gh/janexpando/graphql-compose-typescript)
+[![npm](https://img.shields.io/npm/dt/graphql-compose-typescript.svg)](http://www.npmtrends.com/graphql-compose-typescript)
 Keep in mind, that this module is in early stage of development. 
 Feel free to create issue or pr.
 

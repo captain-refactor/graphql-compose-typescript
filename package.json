@@ -57,6 +57,8 @@
     ],
     "exclude": [
       "dist",
+      "tests",
+      "examples",
       "**/*.d.ts"
     ],
     "all": true
