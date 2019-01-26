@@ -22,7 +22,6 @@ export function $resolver<T>(typeFn?: TypeFn): PropertyDecorator {
         resolver.setResolve(function (rp) {
             const instance = rp.context.instance;
             if (!instance) {
-                return 'safd';
                 throw new InstanceMissing(constructor);
             }
             let parameters = mapArguments(rp, getParamNames(constructor, propertyKey));
