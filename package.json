@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npm run check && ava",
+    "test": "npm run check && nyc ava",
     "test:watch": "ava --watch",
     "check": "tsc --noEmit",
     "build": "tsc",
@@ -21,6 +21,7 @@
     "graphql": "^14.1.1",
     "graphql-compose": "^5.5.0",
     "injection-js": "^2.2.1",
+    "nyc": "^13.1.0",
     "reflect-metadata": "^0.1.13",
     "ts-node": "^7.0.1",
     "ts-node-dev": "^1.0.0-pre.32",
@@ -46,5 +47,16 @@
     "extensions": [
       "ts"
     ]
+  },
+  "nyc": {
+    "extension": [
+      ".ts",
+      ".tsx"
+    ],
+    "exclude": [
+      "dist",
+      "**/*.d.ts"
+    ],
+    "all": true
   }
 }

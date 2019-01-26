@@ -3,3 +3,8 @@ node_js:
   - "8"
   - "10"
 cache: npm
+scripts:
+  - npm install codecov nyc -g
+after_success:
+  - nyc report --reporter=text-lcov > coverage.lcov && codecov
+
