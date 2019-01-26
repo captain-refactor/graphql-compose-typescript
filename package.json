@@ -15,16 +15,16 @@
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {
-    "ts-node": "^7.0.1",
     "@types/graphql": "^14.0.5",
     "@types/node": "^10.12.18",
     "ava": "^1.1.0",
-    "typescript": "^3.2.4",
-    "ts-node-dev": "^1.0.0-pre.32",
-    "reflect-metadata": "^0.1.13",
-    "injection-js": "^2.2.1",
     "graphql": "^14.1.1",
-    "graphql-compose": "^5.5.0"
+    "graphql-compose": "^5.5.0",
+    "injection-js": "^2.2.1",
+    "reflect-metadata": "^0.1.13",
+    "ts-node": "^7.0.1",
+    "ts-node-dev": "^1.0.0-pre.32",
+    "typescript": "^3.2.4"
   },
   "peerDependencies": {
     "graphql": "^14.1.1",
@@ -35,7 +35,9 @@
       "tests/**/*.ts",
       "!**/*.d.ts"
     ],
-    "sources": ["src/**/*.ts"],
+    "sources": [
+      "src/**/*.ts"
+    ],
     "require": [
       "reflect-metadata",
       "ts-node/register/transpile-only"

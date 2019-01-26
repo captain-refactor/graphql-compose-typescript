@@ -11,7 +11,8 @@
     "declaration": true,
     "outDir": "dist",
     "types": [
-      "./node_modules/reflect-metadata"
+      "./node_modules/reflect-metadata",
+      "./node_modules/@types/node"
     ]
   },
   "exclude": [

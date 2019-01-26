@@ -1,9 +1,9 @@
 import {test} from "../src/ava";
 import {$field} from '../src';
 import {Resolver, schemaComposer, TypeComposer} from "graphql-compose";
-import {$arg} from "../src";
+import {$arg} from "../src/decorators/arg";
 import {ExecutionResult, graphql, GraphQLSchema, GraphQLString} from "graphql";
-import {$resolver} from "../src";
+import {$resolver} from "../src/decorators/resolver";
 import {isInstance} from "../src/graphq-compose-typescript";
 import {ExecutionResultDataDefault} from "graphql/execution/execute";
 
