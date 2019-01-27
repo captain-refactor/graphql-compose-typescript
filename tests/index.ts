@@ -296,6 +296,19 @@ test('throw exception, when type is not specified', async t => {
     } catch (e) {
         t.true(e instanceof TypeNotSpecified)
     }
+
+    try {
+        class Service {
+            @$resolver()
+            async getX(): Promise<number> {
+                return 5;
+            }
+        }
+
+        t.fail('it should trow');
+    } catch (e) {
+        t.true(e instanceof TypeNotSpecified)
+    }
 });
 
 
