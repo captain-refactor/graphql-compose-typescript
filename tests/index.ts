@@ -223,7 +223,7 @@ test('sample app with multiple types and so on', async t => {
         constructor(private items: Map<string, Order>) {
         }
 
-        @$resolver(() => Order)
+        @$resolver(() => [Order])
         getOrders(): Order[] {
             let orders = [];
             for (let order of this.items.values()) orders.push(order);
