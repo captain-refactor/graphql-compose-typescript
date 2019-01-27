@@ -16,7 +16,7 @@
     "coverage-report": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
   },
   "keywords": [],
-  "author": "",
+  "author": "Jan Kremeň",
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {
