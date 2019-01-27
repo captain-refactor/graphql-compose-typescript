@@ -3,7 +3,7 @@ import {Resolver, SchemaComposer, schemaComposer, TypeComposer} from "graphql-co
 import {$arg} from "../src";
 import {ExecutionResult, graphql, GraphQLSchema, GraphQLString} from "graphql";
 import {$resolver} from "../src";
-import {isInstance, TypeNotSpecified} from "../src/graphq-compose-typescript";
+import {ArrayTypeNotSpecified, isInstance, TypeNotSpecified} from "../src/graphq-compose-typescript";
 import {ExecutionResultDataDefault} from "graphql/execution/execute";
 import {TestInterface} from "ava";
 import avaTest from "ava";
@@ -17,7 +17,7 @@ interface TestContext {
 export const test: TestInterface<TestContext> = avaTest;
 
 
-test.beforeEach('provide testing functions',t => {
+test.beforeEach('provide testing functions', t => {
     t.context.compose = GraphqlComposeTypescript.create();
     t.context.testResolver = async (resolver: Resolver, query?: string): Promise<ExecutionResult<ExecutionResultDataDefault>> => {
         if (!query) query = `{test}`;
@@ -291,8 +291,25 @@ test('throw exception, when type is not specified', async t => {
                 return 5;
             }
         }
-        t.fail('it shoudl trow');
-    }catch (e) {
+
+        t.fail('it should trow');
+    } catch (e) {
         t.true(e instanceof TypeNotSpecified)
+    }
+});
+
+
+test('array type not specified', async t => {
+    try {
+        class Service {
+            @$resolver()
+            getX(): number[] {
+                return [1, 2, 3, 4];
+            }
+        }
+
+        t.fail('it should trow');
+    } catch (e) {
+        t.true(e instanceof ArrayTypeNotSpecified);
     }
 });
