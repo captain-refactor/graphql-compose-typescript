@@ -1,37 +1,46 @@
 import {$field, GraphqlComposeTypescript} from '../src';
 import {Resolver, SchemaComposer, schemaComposer, TypeComposer} from "graphql-compose";
 import {$arg} from "../src";
-import {ExecutionResult, graphql, GraphQLSchema, GraphQLString} from "graphql";
+import {ExecutionResult, graphql, GraphQLError, GraphQLSchema, GraphQLString} from "graphql";
 import {$resolver} from "../src";
 import {ArrayTypeNotSpecified, isInstance, TypeNotSpecified} from "../src/graphq-compose-typescript";
 import {ExecutionResultDataDefault} from "graphql/execution/execute";
-import {TestInterface} from "ava";
+import {ExecutionContext, TestInterface} from "ava";
 import avaTest from "ava";
+import {InstanceMissing} from "../src/decorators/resolver";
 
 interface TestContext {
     compose: GraphqlComposeTypescript;
-
-    testResolver(resolver: Resolver, query?: string): Promise<ExecutionResult<ExecutionResultDataDefault>>
 }
 
 export const test: TestInterface<TestContext> = avaTest;
 
+async function testResolver(t: ExecutionContext, resolver: Resolver, query?: string): Promise<ExecutionResult<ExecutionResultDataDefault>> {
+    if (!query) query = `{test}`;
+
+    function schemaForResolver(resolver: Resolver): GraphQLSchema {
+        let schemaComposer = new SchemaComposer();
+        schemaComposer.Query.setField('test', resolver);
+        return schemaComposer.buildSchema();
+    }
+
+    return await graphql(schemaForResolver(resolver), query);
+}
+
+async function testResolverData(t: ExecutionContext, resolver: Resolver, query?: string): Promise<ExecutionResultDataDefault> {
+    let result = await testResolver(t, resolver, query);
+    t.falsy(result.errors);
+    return result.data;
+}
+
+async function testResolverErrors(t: ExecutionContext, resolver: Resolver, query?: string): Promise<ReadonlyArray<GraphQLError>> {
+    let result = await testResolver(t, resolver, query);
+    t.truthy(result.errors, 'it should return errors');
+    return result.errors;
+}
 
 test.beforeEach('provide testing functions', t => {
     t.context.compose = GraphqlComposeTypescript.create();
-    t.context.testResolver = async (resolver: Resolver, query?: string): Promise<ExecutionResult<ExecutionResultDataDefault>> => {
-        if (!query) query = `{test}`;
-
-        function schemaForResolver(resolver: Resolver): GraphQLSchema {
-            let schemaComposer = new SchemaComposer();
-            schemaComposer.Query.setField('test', resolver);
-            return schemaComposer.buildSchema();
-        }
-
-        let result = await graphql(schemaForResolver(resolver), query);
-        t.falsy(result.errors);
-        return result;
-    }
 });
 
 test('create basic fields', t => {
@@ -151,8 +160,8 @@ test('how does resolve work', async t => {
     t.true(composer.hasResolver('method'));
     let resolver = composer.getResolver('method');
     t.is(resolver.getType(), GraphQLString);
-    let queryResult = await t.context.testResolver(resolver);
-    t.is(queryResult.data.test, 'SUCCESS');
+    let data = await testResolverData(t, resolver);
+    t.is(data.test, 'SUCCESS');
 });
 
 
@@ -247,14 +256,13 @@ test('sample app with multiple types and so on', async t => {
     const superOrderService = new SuperOrderService(new Map());
     const superOrderServiceComposer = t.context.compose.getComposer(superOrderService);
     t.true(superOrderServiceComposer.hasResolver('getOrder'));
-    let result = await t.context.testResolver(superOrderServiceComposer.getResolver('getOrder'),
+    let data = await testResolverData(t, superOrderServiceComposer.getResolver('getOrder'),
         `{
             test{
                 id
             }
         }`);
-    t.falsy(result.errors);
-    t.is(result.data.test.id, '1');
+    t.is(data.test.id, '1');
 });
 
 test('problem with type providen type [ClassType]', async t => {
@@ -271,7 +279,7 @@ test('problem with type providen type [ClassType]', async t => {
     }
 
     let composer = t.context.compose.getComposer(new Service());
-    let result = await t.context.testResolver(composer.getResolver('getAs'), `
+    let data = await testResolverData(t, composer.getResolver('getAs'), `
     {
         test{
             field
@@ -279,8 +287,8 @@ test('problem with type providen type [ClassType]', async t => {
     }
     `);
 
-    t.is(result.data.test.length, 2);
-    t.deepEqual(result.data.test, [{field: 'value'}, {field: 'value'}]);
+    t.is(data.test.length, 2);
+    t.deepEqual(data.test, [{field: 'value'}, {field: 'value'}]);
 });
 
 test('throw exception, when type is not specified', async t => {
@@ -340,7 +348,7 @@ test('using class as input type', async t => {
         }
     }
 
-    let result = await t.context.testResolver(t.context.compose.getComposer(new Service()).getResolver('saveVector'), `
+    let data = await testResolverData(t, t.context.compose.getComposer(new Service()).getResolver('saveVector'), `
     {
         test(vector: {x: 1, y: 15}){
             x
@@ -348,5 +356,18 @@ test('using class as input type', async t => {
         }
     }
     `);
-    t.deepEqual(result.data.test, {x: 1, y: 15});
+    t.deepEqual(data.test, {x: 1, y: 15});
+});
+
+test('throw on trying using resolver without instance', async t => {
+    class Service {
+        @$resolver()
+        test(): string {
+            return '';
+        }
+    }
+
+    let errors = await testResolverErrors(t, t.context.compose.getComposer(Service).getResolver('test'));
+    t.is(errors[0].message, 'Missing instance for Service.');
+
 });

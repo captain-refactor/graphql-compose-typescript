@@ -18,7 +18,7 @@ export function $resolver<T>(typeFn?: TypeFn): PropertyDecorator {
         let graphqlType = getPropertyGraphqlType(constructor, propertyKey, typeFn);
         resolver.setType(graphqlType);
         resolver.setResolve(function (rp) {
-            const instance = rp.context.instance;
+            const instance = rp.context && rp.context.instance;
             if (!instance) {
                 throw new InstanceMissing(constructor);
             }
