@@ -3,6 +3,5 @@ src
 examples
 tests
 .nyc_output
-.npmignore
 tsconfig.json
 .idea

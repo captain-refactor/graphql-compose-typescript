@@ -4,7 +4,8 @@ node_js:
 cache: npm
 after_success:
   - npm run coverage-report
-before_deploy: npm run build
+before_deploy:
+  - npm run build
 deploy:
   provider: npm
   email: kremenh@gmail.com

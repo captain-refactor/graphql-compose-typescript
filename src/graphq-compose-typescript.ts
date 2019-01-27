@@ -1,11 +1,9 @@
 import {ComposeInputType, ComposeOutputType, ResolveParams, Resolver, TypeComposer} from "graphql-compose";
-import {GraphQLOutputType} from "graphql";
 
-export type TypeFn = () => GraphQLOutputType | ClassType | TypeComposer;
 
-export interface IContainer {
-    get(type: Function): any;
-}
+export type ProvidenType = ComposeOutputType<any, any> | ClassType | [ClassType];
+
+export type TypeFn = () => ProvidenType;
 
 export interface DefaultContext<T> {
     // container: IContainer;
@@ -18,10 +16,6 @@ const PARAM_NAMES = Symbol.for('graphql parameters names');
 
 interface AnnotatedClass<T, Ctx = any> extends ClassType<T> {
     [COMPOSER]?: TypeComposer<T, Ctx>
-}
-
-export type Dict<T, K extends string | symbol = string> = {
-    [key in K]?: T;
 }
 
 export function getComposer<T>(typeOrInstance: ClassType<T> | T): TypeComposer<T> {
@@ -104,20 +98,33 @@ export function getPropertyType(constructor: ClassType, property: string): Class
     return Reflect.getOwnMetadata('design:type', constructor.prototype, property);
 }
 
-export function getPropertyGraphqlType(constructor: ClassType, property: string, providenTypeFn?: TypeFn): ComposeOutputType<any, any> {
-    let providenType: ComposeOutputType<any, any> | ClassType;
-    if (providenTypeFn) providenType = providenTypeFn();
-    if (providenType instanceof Function) {
-        providenType = getComposer(providenType);
+
+function isClassType(type: ProvidenType): type is ClassType<any> {
+    return type instanceof Function;
+}
+
+function isArrayClassType(type: ProvidenType): type is [ClassType<any>] {
+    return Array.isArray(type) && isClassType(type[0]);
+}
+
+function mapOutputType(type: ProvidenType): ComposeOutputType<any, any> | null {
+    if (!type) return null;
+    if (isClassType(type)) {
+        return getComposer(type);
+    } else if (isArrayClassType(type)) {
+        return [getComposer(type[0])]
+    } else {
+        return type;
     }
+}
+
+export function getPropertyGraphqlType(constructor: ClassType, property: string, providenTypeFn?: TypeFn): ComposeOutputType<any, any> {
+    let providenType = mapOutputType(providenTypeFn && providenTypeFn());
 
     let typeClass: ClassType = getPropertyType(constructor, property);
 
     if (typeClass == Function) {
         typeClass = getReturnTypeFromMetadata(constructor, property);
-        if (!typeClass) {
-            throw new TypeNotSpecified(constructor, property);
-        }
     }
 
     if (typeClass == Promise && !providenType) {
@@ -132,10 +139,13 @@ export function getPropertyGraphqlType(constructor: ClassType, property: string,
             return [providenType];
         }
     }
-    return providenType || getGraphqlTypeFromClass(typeClass)
+    let result = providenType || getGraphqlTypeFromClass(typeClass);
+    if (!result) throw new TypeNotSpecified(constructor, property);
+    return result;
 }
 
-export function getGraphqlTypeFromClass(typeClass: ClassType): ComposeOutputType<any, any> {
+export function getGraphqlTypeFromClass(typeClass: ClassType): ComposeOutputType<any, any> | null {
+    if (!typeClass) return null;
     let type: ComposeOutputType<any, any> = getComposer(typeClass);
     if (type) return type;
     if (typeClass === Number) {
