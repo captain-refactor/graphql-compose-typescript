@@ -7,7 +7,6 @@ import {ArrayTypeNotSpecified, isInstance, TypeNotSpecified} from "../src/graphq
 import {ExecutionResultDataDefault} from "graphql/execution/execute";
 import {ExecutionContext, TestInterface} from "ava";
 import avaTest from "ava";
-import {InstanceMissing} from "../src/decorators/resolver";
 
 interface TestContext {
     compose: GraphqlComposeTypescript;
