@@ -326,3 +326,27 @@ test('array type not specified', async t => {
         t.true(e instanceof ArrayTypeNotSpecified);
     }
 });
+
+test('using class as input type', async t => {
+    class Vector {
+        @$field() x: number;
+        @$field() y: number;
+    }
+
+    class Service {
+        @$resolver(() => Vector)
+        saveVector(@$arg('vector')vector: Vector) {
+            return vector;
+        }
+    }
+
+    let result = await t.context.testResolver(t.context.compose.getComposer(new Service()).getResolver('saveVector'), `
+    {
+        test(vector: {x: 1, y: 15}){
+            x
+            y        
+        }
+    }
+    `);
+    t.deepEqual(result.data.test, {x: 1, y: 15});
+});
