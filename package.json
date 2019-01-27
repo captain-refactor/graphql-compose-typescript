@@ -1,6 +1,6 @@
 {
   "name": "graphql-compose-typescript",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "repository": {
     "type": "git",
     "url": "https://github.com/janexpando/graphql-compose-typescript"
@@ -13,6 +13,7 @@
     "test:watch": "ava --watch",
     "check": "tsc --noEmit",
     "build": "tsc",
+    "prepublish": "npm run build",
     "coverage-report": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
   },
   "keywords": [],
