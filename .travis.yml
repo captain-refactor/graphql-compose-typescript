@@ -4,10 +4,10 @@ node_js:
 cache: npm
 after_success:
   - npm run coverage-report
+before_deploy: npm run build
 deploy:
   provider: npm
   email: kremenh@gmail.com
-  skip_cleanup: true
   on:
     tags: true
   api_key:

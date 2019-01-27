@@ -2,8 +2,7 @@
 src
 examples
 tests
-dist/examples
-dist/tests
 .nyc_output
 .npmignore
 tsconfig.json
+.idea
