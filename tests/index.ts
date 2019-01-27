@@ -232,7 +232,7 @@ test('sample app with multiple types and so on', async t => {
         constructor(private items: Map<string, Order>) {
         }
 
-        @$resolver(() => [Order])
+        @$resolver(() => Order)
         getOrders(): Order[] {
             let orders = [];
             for (let order of this.items.values()) orders.push(order);
@@ -370,4 +370,17 @@ test('throw on trying using resolver without instance', async t => {
     let errors = await testResolverErrors(t, t.context.compose.getComposer(Service).getResolver('test'));
     t.is(errors[0].message, 'Missing instance for Service.');
 
+});
+
+
+test('array return type', async t => {
+    class Service {
+        @$field(() => [String])
+        getNames(): string[] {
+            return ['js', 'ts'];
+        }
+    }
+
+    let result = await testResolverData(t, t.context.compose.getComposer(new Service()).getResolver('getNames'));
+    t.deepEqual(result.test, ['js', 'ts']);
 });
