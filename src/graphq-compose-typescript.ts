@@ -1,4 +1,6 @@
 import {ComposeInputType, ComposeOutputType, ResolveParams, Resolver, TypeComposer} from "graphql-compose";
+import {TypeAsString} from "graphql-compose/lib/TypeMapper";
+import {GraphQLOutputType} from "graphql";
 
 
 export type ProvidenType = ComposeOutputType<any, any> | ClassType | [ClassType];
@@ -107,12 +109,19 @@ function isArrayClassType(type: ProvidenType): type is [ClassType<any>] {
     return Array.isArray(type) && isClassType(type[0]);
 }
 
+function mapClassType(type: ClassType): TypeComposer<any, any> | TypeAsString | GraphQLOutputType {
+    let composer = getComposer(type);
+    if (composer) return composer;
+    if (type === Number) return 'Float';
+    return type.name;
+}
+
 function mapOutputType(type: ProvidenType): ComposeOutputType<any, any> | null {
     if (!type) return null;
     if (isClassType(type)) {
-        return getComposer(type);
+        return mapClassType(type);
     } else if (isArrayClassType(type)) {
-        return [getComposer(type[0])]
+        return [mapClassType(type[0])]
     } else {
         return type;
     }

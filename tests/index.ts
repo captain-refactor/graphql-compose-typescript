@@ -375,7 +375,7 @@ test('throw on trying using resolver without instance', async t => {
 
 test('array return type', async t => {
     class Service {
-        @$field(() => [String])
+        @$resolver(() => [String])
         getNames(): string[] {
             return ['js', 'ts'];
         }
