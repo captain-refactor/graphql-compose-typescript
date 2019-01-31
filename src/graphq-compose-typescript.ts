@@ -1,14 +1,6 @@
-import {
-    ComposeInputType,
-    ComposeOutputType,
-    ResolveParams,
-    Resolver,
-    SchemaComposer,
-    TypeComposer
-} from "graphql-compose";
+import {ComposeInputType, ComposeOutputType, ResolveParams, Resolver, TypeComposer} from "graphql-compose";
 import {TypeAsString} from "graphql-compose/lib/TypeMapper";
 import {GraphQLOutputType} from "graphql";
-import {InstanceMissing} from "./decorators/resolver";
 
 
 export type ProvidenType = ComposeOutputType<any, any> | ClassType | [ClassType];
@@ -35,7 +27,6 @@ export function getComposer<T>(typeOrInstance: ClassType<T> | T): TypeComposer<T
 export function setComposer<T>(typeOrInstance: ClassType<T> | T, composer: TypeComposer<T>) {
     typeOrInstance[COMPOSER] = composer;
 }
-
 
 export function getOrCreateResolver<T>(constructor: AnnotatedClass<T>, property: string) {
     const composer = getOrCreateComposer(constructor);
@@ -206,72 +197,11 @@ export function isInstance<T>(typeOrInstance: AnnotatedClass<T> | T): typeOrInst
     return !(typeOrInstance.constructor === Function);
 }
 
-export function buildResolver(constructor, propertyKey, typeFn): Resolver {
-    let resolver = getOrCreateResolver(constructor, propertyKey);
-    let graphqlType = getPropertyGraphqlType(constructor, propertyKey, typeFn);
-    resolver.setType(graphqlType);
-    resolver.setResolve(function (rp) {
-        const instance = rp.context && rp.context.instance;
-        if (!instance) {
-            throw new InstanceMissing(constructor);
-        }
-        let parameters = mapArguments(rp, getParamNames(constructor, propertyKey));
-        return instance[propertyKey](...parameters);
-    });
-    return resolver;
-}
-
-const SCHEMA_COMPOSER = Symbol.for('schema composer');
-
-
-function getSchemaComposer<T>(constructor: AnnotatedClass<T> | T) {
-    return constructor[SCHEMA_COMPOSER];
-}
-
-function setSchemaComposer<T>(constructor: AnnotatedClass<T>, composer: SchemaComposer<any>) {
-    constructor[SCHEMA_COMPOSER] = composer;
-}
-
-export function getOrCreateSchemaComposer<T>(constructor: AnnotatedClass<T>): SchemaComposer<any> {
-    let composer = getSchemaComposer(constructor);
-    if (!composer) {
-        composer = new SchemaComposer();
-        setSchemaComposer(constructor, composer);
-    }
-    return composer;
-}
-
-export function getConstructor<T>(instance: T): AnnotatedClass<T> {
-    return instance.constructor as any;
-}
-
-function createSchemaComposerForInstance<T>(instance: T): SchemaComposer<any> {
-    let constructor = getConstructor(instance);
-    let composer = getSchemaComposer(constructor);
-    for (let key of composer.Query.getFieldNames()) {
-        composer.Query.getFieldTC(key).wrapResolver(key, next => rp => {
-            if (!rp.context) rp.context = {};
-            rp.context.instance = instance;
-            return next(rp);
-        });
-
-    }
-    return composer;
-}
-
 export class GraphqlComposeTypescript {
     getComposer<T>(typeOrInstance: AnnotatedClass<T> | T): TypeComposer<T, DefaultContext<T>> {
         let composer = getComposer(typeOrInstance);
         if (!composer && isInstance(typeOrInstance)) {
             composer = createComposerForInstance(typeOrInstance);
-        }
-        return composer;
-    }
-
-    getSchemaComposer<T>(typeOrInstance: AnnotatedClass<T> | T): SchemaComposer<DefaultContext<T>> {
-        let composer = getSchemaComposer(typeOrInstance);
-        if (!composer && isInstance(typeOrInstance)) {
-            composer = createSchemaComposerForInstance(typeOrInstance);
         }
         return composer;
     }

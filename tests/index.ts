@@ -7,7 +7,6 @@ import {ArrayTypeNotSpecified, isInstance, TypeNotSpecified} from "../src/graphq
 import {ExecutionResultDataDefault} from "graphql/execution/execute";
 import {ExecutionContext, TestInterface} from "ava";
 import avaTest from "ava";
-import {$query} from "../src/decorators/query";
 
 interface TestContext {
     compose: GraphqlComposeTypescript;
@@ -383,20 +382,4 @@ test('array return type', async t => {
 
     let result = await testResolverData(t, t.context.compose.getComposer(new Service()).getResolver('getNames'));
     t.deepEqual(result.test, ['js', 'ts']);
-});
-
-
-test('get schema composer from type', async t => {
-    class Service {
-        @$query()
-        hello(): string {
-            return 'SUCCESS';
-        }
-    }
-
-    let schemaComposer: SchemaComposer<any> = t.context.compose.getSchemaComposer(new Service());
-    t.truthy(schemaComposer);
-    t.true(schemaComposer.Query.hasField('hello'));
-    let result = await graphql(schemaComposer.buildSchema(), `{hello}`);
-    t.falsy(result.errors);
 });
