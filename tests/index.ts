@@ -176,7 +176,7 @@ test('isInstance function', t => {
     t.true(isInstance(new Date));
 });
 
-test('inheritance', t => {
+test.only('inheritance', t => {
     class A {
         @$field()
         x: boolean;
@@ -207,13 +207,11 @@ test('inheritance', t => {
 
     let a = new A;
     let b = new B;
-    let aComposer = t.context.compose.getComposer(a);
-    t.true(aComposer.hasResolver('get5'));
-    t.false(aComposer.hasResolver('get6'));
+    t.truthy(t.context.compose.getResolver(a, 'get5'));
+    t.throws(() => t.context.compose.getResolver(a, 'get6' as any));
 
-    let bComposer = t.context.compose.getComposer(b);
-    t.true(bComposer.hasResolver('get5'));
-    t.true(bComposer.hasResolver('get6'));
+    t.truthy(t.context.compose.getResolver(b, 'get5'));
+    t.truthy(t.context.compose.getResolver(b, 'get6'));
 });
 
 test('sample app with multiple types and so on', async t => {
@@ -253,9 +251,7 @@ test('sample app with multiple types and so on', async t => {
     }
 
     const superOrderService = new SuperOrderService(new Map());
-    const superOrderServiceComposer = t.context.compose.getComposer(superOrderService);
-    t.true(superOrderServiceComposer.hasResolver('getOrder'));
-    let data = await testResolverData(t, superOrderServiceComposer.getResolver('getOrder'),
+    let data = await testResolverData(t, t.context.compose.getResolver(superOrderService, 'getOrder'),
         `{
             test{
                 id
@@ -277,8 +273,8 @@ test('problem with type providen type [ClassType]', async t => {
         }
     }
 
-    let composer = t.context.compose.getComposer(new Service());
-    let data = await testResolverData(t, composer.getResolver('getAs'), `
+    let resolver = t.context.compose.getResolver(new Service(), 'getAs');
+    let data = await testResolverData(t, resolver, `
     {
         test{
             field
@@ -299,6 +295,7 @@ test('throw exception, when type is not specified', async t => {
             }
         }
 
+        t.context.compose.getResolver(new Service(), 'getX');
         t.fail('it should trow');
     } catch (e) {
         t.true(e instanceof TypeNotSpecified)
@@ -312,6 +309,7 @@ test('throw exception, when type is not specified', async t => {
             }
         }
 
+        t.context.compose.getResolver(new Service(), 'getX');
         t.fail('it should trow');
     } catch (e) {
         t.true(e instanceof TypeNotSpecified)
@@ -328,6 +326,7 @@ test('array type not specified', async t => {
             }
         }
 
+        t.context.compose.getResolver(new Service(), 'getX');
         t.fail('it should trow');
     } catch (e) {
         t.true(e instanceof ArrayTypeNotSpecified);
@@ -347,7 +346,7 @@ test('using class as input type', async t => {
         }
     }
 
-    let data = await testResolverData(t, t.context.compose.getComposer(new Service()).getResolver('saveVector'), `
+    let data = await testResolverData(t, t.context.compose.getResolver(new Service(), 'saveVector'), `
     {
         test(vector: {x: 1, y: 15}){
             x
@@ -358,20 +357,6 @@ test('using class as input type', async t => {
     t.deepEqual(data.test, {x: 1, y: 15});
 });
 
-test('throw on trying using resolver without instance', async t => {
-    class Service {
-        @$resolver()
-        test(): string {
-            return '';
-        }
-    }
-
-    let errors = await testResolverErrors(t, t.context.compose.getComposer(Service).getResolver('test'));
-    t.is(errors[0].message, 'Missing instance for Service.');
-
-});
-
-
 test('array return type', async t => {
     class Service {
         @$resolver(() => [String])
@@ -380,6 +365,8 @@ test('array return type', async t => {
         }
     }
 
-    let result = await testResolverData(t, t.context.compose.getComposer(new Service()).getResolver('getNames'));
+    let resolver = t.context.compose.getResolver(new Service(), 'getNames');
+    t.truthy(resolver);
+    let result = await testResolverData(t, resolver);
     t.deepEqual(result.test, ['js', 'ts']);
 });

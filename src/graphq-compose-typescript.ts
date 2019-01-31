@@ -1,6 +1,8 @@
 import {ComposeInputType, ComposeOutputType, ResolveParams, Resolver, TypeComposer} from "graphql-compose";
 import {TypeAsString} from "graphql-compose/lib/TypeMapper";
 import {GraphQLOutputType} from "graphql";
+import {createResolver} from "./resolver-builder";
+import {getReturnTypeFromMetadata} from "./metadata";
 
 
 export type ProvidenType = ComposeOutputType<any, any> | ClassType | [ClassType];
@@ -12,11 +14,10 @@ export interface DefaultContext<T> {
     instance: T;
 }
 
-const COMPOSER = Symbol.for('GraphQL class metadata');
-const PARAM_NAMES = Symbol.for('graphql parameters names');
 
+export const COMPOSER = Symbol.for('GraphQL class metadata');
 
-interface AnnotatedClass<T, Ctx = any> extends ClassType<T> {
+export interface AnnotatedClass<T, Ctx = any> extends ClassType<T> {
     [COMPOSER]?: TypeComposer<T, Ctx>
 }
 
@@ -49,17 +50,6 @@ export function mapArguments(rp: Partial<ResolveParams<any, any>>, paramNames: s
     return parameters;
 }
 
-export function setParamName(constructor: ClassType, property: string, name: string, index: number) {
-    const propertyNames = getParamNames(constructor, property);
-    propertyNames[index] = name;
-}
-
-export function getParamNames(constructor: ClassType, property: string) {
-    let method = constructor.prototype[property];
-    if (!method[PARAM_NAMES]) method[PARAM_NAMES] = [];
-    return method[PARAM_NAMES];
-}
-
 export function getOrCreateComposer<T>(typeOrInstance: AnnotatedClass<T>): TypeComposer<T> {
 
     function getParentClass(type) {
@@ -74,14 +64,6 @@ export function getOrCreateComposer<T>(typeOrInstance: AnnotatedClass<T>): TypeC
         setComposer(typeOrInstance, parentComposer.clone(typeOrInstance.name));
     }
     return getComposer(typeOrInstance);
-}
-
-export function getReturnTypeFromMetadata(constructor: ClassType, property: string): ClassType {
-    return Reflect.getOwnMetadata('design:returntype', constructor.prototype, property);
-}
-
-export function getParameterTypesFromMetadata(constructor: ClassType, property: string): ClassType[] {
-    return Reflect.getOwnMetadata('design:paramtypes', constructor.prototype, property);
 }
 
 export class TypeNotSpecified extends Error {
@@ -101,11 +83,11 @@ export function getPropertyType(constructor: ClassType, property: string): Class
 }
 
 
-function isClassType(type: ProvidenType): type is ClassType<any> {
+export function isClassType(type: ProvidenType): type is ClassType<any> {
     return type instanceof Function;
 }
 
-function isArrayClassType(type: ProvidenType): type is [ClassType<any>] {
+export function isArrayClassType(type: ProvidenType): type is [ClassType<any>] {
     return Array.isArray(type) && isClassType(type[0]);
 }
 
@@ -116,7 +98,7 @@ function mapClassType(type: ClassType): TypeComposer<any, any> | TypeAsString | 
     return type.name;
 }
 
-function mapOutputType(type: ProvidenType): ComposeOutputType<any, any> | null {
+export function mapOutputType(type: ProvidenType): ComposeOutputType<any, any> | null {
     if (!type) return null;
     if (isClassType(type)) {
         return mapClassType(type);
@@ -197,6 +179,8 @@ export function isInstance<T>(typeOrInstance: AnnotatedClass<T> | T): typeOrInst
     return !(typeOrInstance.constructor === Function);
 }
 
+
+
 export class GraphqlComposeTypescript {
     getComposer<T>(typeOrInstance: AnnotatedClass<T> | T): TypeComposer<T, DefaultContext<T>> {
         let composer = getComposer(typeOrInstance);
@@ -204,6 +188,10 @@ export class GraphqlComposeTypescript {
             composer = createComposerForInstance(typeOrInstance);
         }
         return composer;
+    }
+
+    getResolver<T>(instance: T, method: keyof T & string): Resolver<T> {
+        return createResolver(instance, method);
     }
 
     static create() {

@@ -1,9 +1,10 @@
 import {
     ClassType,
-    getOrCreateComposer, getOrCreateResolver, getParamNames,
+    getOrCreateComposer, getOrCreateResolver,
     getPropertyGraphqlType,
     getPropertyType, mapArguments, TypeFn
 } from "../graphq-compose-typescript";
+import {getParamNames} from "../arguments-builder";
 
 
 export function $field(typeFn?: TypeFn): PropertyDecorator {
