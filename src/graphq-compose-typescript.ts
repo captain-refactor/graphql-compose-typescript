@@ -1,31 +1,18 @@
-import {ComposeInputType, ComposeOutputType, ResolveParams, Resolver, TypeComposer} from "graphql-compose";
+import {ComposeInputType, ComposeOutputType, Resolver, TypeComposer} from "graphql-compose";
 import {TypeAsString} from "graphql-compose/lib/TypeMapper";
 import {GraphQLOutputType} from "graphql";
 import {createResolver} from "./resolver-builder";
 import {getReturnTypeFromMetadata} from "./metadata";
-import {AnnotatedClass, getComposer, getOrCreateComposer, setComposer} from "./object-type-composition";
+import {AnnotatedClass, getOrCreateComposer} from "./object-type-composition";
 import {StringKey} from "./utils";
-
 
 export type ProvidenType = ComposeOutputType<any, any> | ClassType | [ClassType];
 
 export type TypeFn = () => ProvidenType;
 
 export interface DefaultContext<T> {
-    // container: IContainer;
     instance: T;
 }
-
-// export function getOrCreateResolver<T>(constructor: AnnotatedClass<T>, property: string) {
-//     const composer = getOrCreateComposer(constructor);
-//     if (composer.hasResolver(property)) {
-//         return composer.getResolver(property);
-//     } else {
-//         let resolver = new Resolver({name: property});
-//         composer.addResolver(resolver);
-//         return resolver;
-//     }
-// }
 
 export function mapArguments(args: any, paramNames: string[]): any[] {
     if (paramNames.length === 0) return [];
@@ -129,26 +116,6 @@ export function toInputType(type: ComposeOutputType<any, any, any>): ComposeInpu
     }
     return type as ComposeInputType;
 
-}
-
-export function createComposerForInstance<T>(instance: T, newName?: string): TypeComposer<T, DefaultContext<T>> {
-    function wrapAllResolvers(composer: TypeComposer) {
-        for (let name of composer.getResolvers().keys()) {
-            composer.wrapResolverResolve(name, next => rp => {
-                if (!rp.context) rp.context = {};
-                rp.context.instance = instance;
-                return next(rp);
-            });
-        }
-    }
-
-    const constructor = instance.constructor as ClassType<T>;
-    let composer = getOrCreateComposer(constructor);
-    if (!composer) return composer;
-    const instanceComposer = composer.clone(newName || constructor.name + 'Instance');
-    wrapAllResolvers(instanceComposer);
-    setComposer(instance, instanceComposer);
-    return instanceComposer;
 }
 
 export function isInstance<T>(typeOrInstance: AnnotatedClass<T> | T): typeOrInstance is T {
