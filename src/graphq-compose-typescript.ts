@@ -3,6 +3,8 @@ import {TypeAsString} from "graphql-compose/lib/TypeMapper";
 import {GraphQLOutputType} from "graphql";
 import {createResolver} from "./resolver-builder";
 import {getReturnTypeFromMetadata} from "./metadata";
+import {AnnotatedClass, getComposer, getOrCreateComposer, setComposer} from "./object-type-composition";
+import {StringKey} from "./utils";
 
 
 export type ProvidenType = ComposeOutputType<any, any> | ClassType | [ClassType];
@@ -14,35 +16,20 @@ export interface DefaultContext<T> {
     instance: T;
 }
 
+// export function getOrCreateResolver<T>(constructor: AnnotatedClass<T>, property: string) {
+//     const composer = getOrCreateComposer(constructor);
+//     if (composer.hasResolver(property)) {
+//         return composer.getResolver(property);
+//     } else {
+//         let resolver = new Resolver({name: property});
+//         composer.addResolver(resolver);
+//         return resolver;
+//     }
+// }
 
-export const COMPOSER = Symbol.for('GraphQL class metadata');
-
-export interface AnnotatedClass<T, Ctx = any> extends ClassType<T> {
-    [COMPOSER]?: TypeComposer<T, Ctx>
-}
-
-export function getComposer<T>(typeOrInstance: ClassType<T> | T): TypeComposer<T> {
-    return typeOrInstance[COMPOSER];
-}
-
-export function setComposer<T>(typeOrInstance: ClassType<T> | T, composer: TypeComposer<T>) {
-    typeOrInstance[COMPOSER] = composer;
-}
-
-export function getOrCreateResolver<T>(constructor: AnnotatedClass<T>, property: string) {
-    const composer = getOrCreateComposer(constructor);
-    if (composer.hasResolver(property)) {
-        return composer.getResolver(property);
-    } else {
-        let resolver = new Resolver({name: property});
-        composer.addResolver(resolver);
-        return resolver;
-    }
-}
-
-export function mapArguments(rp: Partial<ResolveParams<any, any>>, paramNames: string[]) {
+export function mapArguments(args: any, paramNames: string[]): any[] {
     if (paramNames.length === 0) return [];
-    let args = rp.args || {};
+    args = args || {};
     let parameters = [];
     for (const name of paramNames) {
         parameters.push(args[name]);
@@ -50,21 +37,6 @@ export function mapArguments(rp: Partial<ResolveParams<any, any>>, paramNames: s
     return parameters;
 }
 
-export function getOrCreateComposer<T>(typeOrInstance: AnnotatedClass<T>): TypeComposer<T> {
-
-    function getParentClass(type) {
-        return type.__proto__;
-    }
-
-    const composer = getComposer(typeOrInstance);
-    let parentComposer = getComposer(getParentClass(typeOrInstance));
-    if (!composer) {
-        setComposer(typeOrInstance, TypeComposer.createTemp({name: typeOrInstance.name}));
-    } else if (composer === parentComposer) {
-        setComposer(typeOrInstance, parentComposer.clone(typeOrInstance.name));
-    }
-    return getComposer(typeOrInstance);
-}
 
 export class TypeNotSpecified extends Error {
     constructor(constructor: Function, propertyName: string) {
@@ -79,7 +51,7 @@ export class ArrayTypeNotSpecified extends Error {
 }
 
 export function getPropertyType(constructor: ClassType, property: string): ClassType {
-    return Reflect.getOwnMetadata('design:type', constructor.prototype, property);
+    return Reflect.getMetadata('design:type', constructor.prototype, property);
 }
 
 
@@ -92,7 +64,7 @@ export function isArrayClassType(type: ProvidenType): type is [ClassType<any>] {
 }
 
 function mapClassType(type: ClassType): TypeComposer<any, any> | TypeAsString | GraphQLOutputType {
-    let composer = getComposer(type);
+    let composer = getOrCreateComposer(type);
     if (composer) return composer;
     if (type === Number) return 'Float';
     return type.name;
@@ -107,6 +79,10 @@ export function mapOutputType(type: ProvidenType): ComposeOutputType<any, any> |
     } else {
         return type;
     }
+}
+
+export function isMethod<T>(constructor: ClassType<T>, name: StringKey<T>): boolean {
+    return getPropertyType(constructor, name) == Function;
 }
 
 export function getPropertyGraphqlType(constructor: ClassType, property: string, providenTypeFn?: TypeFn): ComposeOutputType<any, any> {
@@ -127,7 +103,7 @@ export function getPropertyGraphqlType(constructor: ClassType, property: string,
         if (Array.isArray(providenType)) {
             return providenType;
         } else {
-            return [providenType];
+            return [providenType] as ComposeOutputType<any, any>;
         }
     }
     let result = providenType || getGraphqlTypeFromClass(typeClass);
@@ -137,7 +113,7 @@ export function getPropertyGraphqlType(constructor: ClassType, property: string,
 
 export function getGraphqlTypeFromClass(typeClass: ClassType): ComposeOutputType<any, any> | null {
     if (!typeClass) return null;
-    let type: ComposeOutputType<any, any> = getComposer(typeClass);
+    let type: ComposeOutputType<any, any> = getOrCreateComposer(typeClass);
     if (type) return type;
     if (typeClass === Number) {
         type = 'Float';
@@ -167,7 +143,7 @@ export function createComposerForInstance<T>(instance: T, newName?: string): Typ
     }
 
     const constructor = instance.constructor as ClassType<T>;
-    let composer = getComposer(constructor);
+    let composer = getOrCreateComposer(constructor);
     if (!composer) return composer;
     const instanceComposer = composer.clone(newName || constructor.name + 'Instance');
     wrapAllResolvers(instanceComposer);
@@ -180,14 +156,9 @@ export function isInstance<T>(typeOrInstance: AnnotatedClass<T> | T): typeOrInst
 }
 
 
-
 export class GraphqlComposeTypescript {
-    getComposer<T>(typeOrInstance: AnnotatedClass<T> | T): TypeComposer<T, DefaultContext<T>> {
-        let composer = getComposer(typeOrInstance);
-        if (!composer && isInstance(typeOrInstance)) {
-            composer = createComposerForInstance(typeOrInstance);
-        }
-        return composer;
+    getComposer<T>(typeOrInstance: AnnotatedClass<T>): TypeComposer<T, DefaultContext<T>> {
+        return getOrCreateComposer(typeOrInstance);
     }
 
     getResolver<T>(instance: T, method: keyof T & string): Resolver<T> {

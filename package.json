@@ -19,7 +19,9 @@
   "keywords": [],
   "author": "Jan Kremeň",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "immutable": "^4.0.0-rc.12"
+  },
   "devDependencies": {
     "@types/graphql": "^14.0.5",
     "@types/node": "^10.12.18",

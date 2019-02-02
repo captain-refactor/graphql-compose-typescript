@@ -36,7 +36,7 @@ export function createResolver<T>(instance: T, method: StringKey<T>) {
         type: getPropertyGraphqlType(constructor, method, typeFn),
         args: getArguments(constructor, method),
         resolve(rp) {
-            let parameters = mapArguments(rp, getParamNames(constructor, method));
+            let parameters = mapArguments(rp.args, getParamNames(constructor, method));
             let instanceMethod: Function = instance[method] as any;
             return instanceMethod(...parameters);
         }

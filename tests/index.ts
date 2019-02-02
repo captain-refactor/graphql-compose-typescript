@@ -154,10 +154,9 @@ test('how does resolve work', async t => {
     }
 
     let instance = new A('SUCCESS');
-    let composer = t.context.compose.getComposer(instance);
-    t.truthy(composer);
-    t.true(composer.hasResolver('method'));
-    let resolver = composer.getResolver('method');
+
+
+    let resolver = t.context.compose.getResolver(instance, 'method');
     t.is(resolver.getType(), GraphQLString);
     let data = await testResolverData(t, resolver);
     t.is(data.test, 'SUCCESS');
@@ -176,7 +175,7 @@ test('isInstance function', t => {
     t.true(isInstance(new Date));
 });
 
-test.only('inheritance', t => {
+test('inheritance', t => {
     class A {
         @$field()
         x: boolean;

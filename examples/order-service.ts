@@ -23,9 +23,8 @@ class OrderService {
 async function main(){
     let orderService = new OrderService();
 
-    let compose = GraphqlComposeTypescript.create()
-    let typeComposer = compose.getComposer(orderService);
-    schemaComposer.Query.setField('getOrders', typeComposer.getResolver('getOrders'));
+    let compose = GraphqlComposeTypescript.create();
+    schemaComposer.Query.setField('getOrders', compose.getResolver(orderService,'getOrders'));
     let schema = schemaComposer.buildSchema();
     let result = await graphql(schema, `{
         getOrders{
