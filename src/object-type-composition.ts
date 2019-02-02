@@ -13,9 +13,10 @@ export interface AnnotatedClass<T, Ctx = any> extends ClassType<T> {
     [COMPOSER]?: TypeComposer<T, Ctx>
 }
 
-export function createResolver<T>(constructor: ClassType<T>, method: StringKey<T>): GraphQLFieldResolver<T, any> {
+export function createResolver<T>(constructor: ClassType<T>, key: StringKey<T>): GraphQLFieldResolver<T, any> {
     return (source: T, args) => {
-        return source[method](...mapArguments(args, getParamNames(constructor, method)))
+        let method: Function = constructor.prototype[key] as any;
+        return method.bind(source)(...mapArguments(args, getParamNames(constructor, key)));
     };
 }
 

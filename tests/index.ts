@@ -162,7 +162,6 @@ test('how does resolve work', async t => {
     t.is(data.test, 'SUCCESS');
 });
 
-
 test('isInstance function', t => {
     class A {
     }
@@ -368,4 +367,34 @@ test('array return type', async t => {
     t.truthy(resolver);
     let result = await testResolverData(t, resolver);
     t.deepEqual(result.test, ['js', 'ts']);
+});
+
+
+test('resolve method field even on plain objects', async t => {
+    class Person {
+        @$field() name: string;
+        @$field() surname: string;
+
+        @$field() wholeName(): string {
+            return `${this.name} ${this.surname}`;
+        }
+    }
+
+    class Service {
+        @$resolver(() => Person)
+        person() {
+            return {
+                name: 'Jan',
+                surname: 'Kremeň',
+            };
+        }
+    }
+
+    let result = await testResolverData(t, t.context.compose.getResolver(new Service(), 'person'), `{test{wholeName}}`);
+
+    t.deepEqual(result, {
+        test: {
+            wholeName: 'Jan Kremeň'
+        }
+    })
 });
