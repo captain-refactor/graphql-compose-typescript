@@ -41,10 +41,11 @@ export class ResolverBuilder {
         let constructor = getConstructor(instance);
         let spec = this.storage.getResolverSpec(constructor, method);
         const {typeFn} = spec;
+        const type = this.typeMapper.getPropertyGraphqlType(constructor, method, typeFn);
         this.queueSolver.solve();
         return new Resolver({
             name: method,
-            type: this.typeMapper.getPropertyGraphqlType(constructor, method, typeFn),
+            type,
             args: this.argumentsBuilder.getArguments(constructor, method),
             async resolve(rp) {
                 let parameters = mapArguments(rp.args, getParamNames(constructor, method));

@@ -9,6 +9,7 @@ export class QueueSolver {
     solve() {
         for (const classType of this.queue.iterateUnsolved()) {
             this.creator.createTypeComposer(classType);
+            this.queue.markSolved(classType);
         }
     }
 

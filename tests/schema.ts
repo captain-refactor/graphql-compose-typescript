@@ -66,15 +66,3 @@ test('mount resolver on object type', async t => {
     t.falsy(result.errors);
     t.is(result.data.user.nameLength, 10);
 });
-
-
-test('create type twice', t => {
-    const sc = new SchemaComposer();
-    let t1 = sc.TypeComposer.create({
-        name: 'hello'
-    });
-    let t2 = sc.TypeComposer.create({
-        name: 'hello'
-    });
-    t.fail('it should fail, i hope');
-});

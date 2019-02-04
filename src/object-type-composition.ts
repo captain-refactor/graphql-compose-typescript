@@ -31,15 +31,18 @@ export class TypeComposerCreator {
     }
 
     protected getComposer<T>(type: ClassType<T>): TypeComposer<T> {
-        return this.schemaComposer.getTC(this.nameKeeper.getTypeName(type))
+        let name = this.nameKeeper.getTypeName(type);
+        if (this.schemaComposer.has(name)) {
+            return this.schemaComposer.getTC(name)
+        }
+        return null;
     }
 
     getOrCreateComposer<T>(constructor: AnnotatedClass<T>): TypeComposer<T> {
         const composer = this.getComposer(constructor);
-        if (!composer) {
-            if (!this.fieldSpec.isDecorated(constructor)) return null;
-            return this.createTypeComposer(constructor);
-        }
+        if (composer) return composer;
+        if (!this.fieldSpec.isDecorated(constructor)) return null;
+        return this.createTypeComposer(constructor);
     }
 
     protected createResolver<T>(constructor: ClassType<T>, key: StringKey<T>): GraphQLFieldResolver<T, any> {
