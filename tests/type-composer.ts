@@ -1,4 +1,4 @@
-import {test} from "./_support";
+import {sleep, test} from "./_support";
 import {$arg, $field, $resolver} from "../src";
 import {schemaComposer, TypeComposer} from "graphql-compose";
 import {graphql} from "graphql";
@@ -46,7 +46,7 @@ test('compose type using other classes', t => {
     t.true(composer.getFieldTC('a').hasField('a'));
 });
 
-test('types should be connected by reference, not name', t => {
+test.only('types should be connected by reference, not name', async t => {
     class A {
         @$field() a: string;
     }

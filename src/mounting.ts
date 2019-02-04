@@ -1,4 +1,4 @@
-import {ClassType, isClassType, ProvidenType, TypeFn} from "./graphq-compose-typescript";
+import {ClassSpecialist, ClassType, ProvidenType, TypeFn} from "./graphq-compose-typescript";
 import {Map, List} from "immutable";
 import {getConstructor, StringKey} from "./utils";
 import {SchemaComposer, TypeComposer} from "graphql-compose";
@@ -37,10 +37,13 @@ export class MountPointIsNull<T> extends PropertyError<T> {
 
 
 export class TypeNameConvertor {
+    constructor(protected cls: ClassSpecialist) {
+    }
+
     getTypeName(point: MountPoint): string {
         if (typeof point == 'string') {
             return point;
-        } else if (isClassType(point)) {
+        } else if (this.cls.isClassType(point)) {
             return point.name;
         }
         return null;
@@ -49,7 +52,7 @@ export class TypeNameConvertor {
 
 export class Mounter {
     constructor(protected nameConvertor: TypeNameConvertor,
-                public resolverBuilder: ResolverBuilder) {
+                protected resolverBuilder: ResolverBuilder) {
     }
 
     getTC(composer: SchemaComposer<any>, point: MountPoint): TypeComposer {
