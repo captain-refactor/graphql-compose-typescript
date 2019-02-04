@@ -7,6 +7,6 @@ let fsk = new FieldSpecKeeper();
 export function $field(typeFn?: TypeFn): PropertyDecorator {
     return <T>(prototype: T, propertyName: StringKey<T>) => {
         const constructor = getConstructor(prototype);
-        fsk.setType(constructor, propertyName, typeFn);
+        fsk.setTypeSpec(constructor, propertyName, typeFn);
     };
 }

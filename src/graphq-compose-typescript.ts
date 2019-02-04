@@ -13,6 +13,9 @@ import {Mounter, TypeNameConvertor} from "./mounting";
 import {ArgumentsBuilder} from "./arguments-builder";
 import {ResolverBuilder, ResolverSpecStorage} from "./resolver-builder";
 import {FieldSpecKeeper} from "./field-spec";
+import {Queue} from "./class-type/queue";
+import {TypeNameKeeper} from "./type-name";
+import {QueueSolver} from "./class-type/queue-solver";
 
 export type ProvidenType = ComposeOutputType<any, any> | ClassType | [ClassType];
 
@@ -56,10 +59,10 @@ export class ClassSpecialist {
 }
 
 export class TypeMapper {
-    constructor(protected schemaComposer: SchemaComposer<any>,
-                protected fieldSpec: FieldSpecKeeper,
+    constructor(protected fieldSpec: FieldSpecKeeper,
                 protected classSpec: ClassSpecialist,
-                public typeComposerCreator: TypeComposerCreator,
+                protected nk: TypeNameKeeper,
+                protected resolutionQueue: Queue,
                 protected propertyTypeKeeper: PropertyTypeKeeper) {
     }
 
@@ -76,7 +79,8 @@ export class TypeMapper {
         if (typeClass === Number) {
             return 'Float';
         } else if (this.fieldSpec.isDecorated(typeClass)) {
-            return this.typeComposerCreator.getOrCreateComposer(typeClass);
+            this.resolutionQueue.add(typeClass);
+            return this.nk.getTypeName(typeClass);
         } else {
             return typeClass.name;
         }
@@ -157,15 +161,17 @@ export class GraphqlComposeTypescript {
     }
 
     static create() {
-        const classSpec = new ClassSpecialist();
-        const nameConvertor = new TypeNameConvertor(classSpec);
+        const classSpecialist = new ClassSpecialist();
+        const nameConvertor = new TypeNameConvertor(classSpecialist);
         const ptk = new PropertyTypeKeeper();
-        const fsk = new FieldSpecKeeper();
-        const typeMapper = new TypeMapper(schemaComposer, fsk, classSpec, null, ptk);
+        const fieldSpecKeeper = new FieldSpecKeeper();
+        const typeNameKeeper = new TypeNameKeeper(classSpecialist);
+        const queue = new Queue();
+        const typeMapper = new TypeMapper(fieldSpecKeeper, classSpecialist, typeNameKeeper, queue, ptk);
         const argumentsBuilder = new ArgumentsBuilder(typeMapper);
-        const typeComposerCreator = new TypeComposerCreator(argumentsBuilder, typeMapper, fsk, ptk, schemaComposer);
-        typeMapper.typeComposerCreator = typeComposerCreator;
-        const resolverBuilder = new ResolverBuilder(typeMapper, argumentsBuilder, new ResolverSpecStorage());
+        const typeComposerCreator = new TypeComposerCreator(argumentsBuilder, typeMapper, fieldSpecKeeper, ptk, typeNameKeeper, schemaComposer);
+        const resolverSpecStorage = new ResolverSpecStorage();
+        const resolverBuilder = new ResolverBuilder(typeMapper, argumentsBuilder, new QueueSolver(queue, typeComposerCreator), resolverSpecStorage);
         const mounter = new Mounter(nameConvertor, resolverBuilder);
         return new GraphqlComposeTypescript(schemaComposer, mounter, typeComposerCreator, resolverBuilder);
     }

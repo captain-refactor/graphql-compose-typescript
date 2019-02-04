@@ -10,7 +10,7 @@ export class FieldSpecKeeper {
         return !!constructor[FIELD_TYPES];
     }
 
-    setType<T>(constructor: ClassType<T>, name: StringKey<T>, type: TypeFn) {
+    setTypeSpec<T>(constructor: ClassType<T>, name: StringKey<T>, type: TypeFn) {
         this.setFieldTypes(constructor, this.getFieldTypes(constructor).set(name, type));
     }
 

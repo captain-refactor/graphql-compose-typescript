@@ -46,28 +46,6 @@ test('compose type using other classes', t => {
     t.true(composer.getFieldTC('a').hasField('a'));
 });
 
-test.only('types should be connected by reference, not name', async t => {
-    class A {
-        @$field() a: string;
-    }
-
-    let typeA2 = TypeComposer.create({name: 'A'});
-
-
-    class B {
-        @$field(() => typeA2) a;
-    }
-
-    class C {
-        @$field(() => A) a;
-    }
-
-    const composeTsc = t.context.compose;
-
-    t.false(composeTsc.getComposer(B).getFieldTC('a').hasField('a'));
-    t.true(composeTsc.getComposer(C).getFieldTC('a').hasField('a'));
-});
-
 test('create field on class with arguments', async t => {
     class A {
         @$field()

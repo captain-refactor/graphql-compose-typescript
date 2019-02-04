@@ -12,6 +12,7 @@ import {ArgumentsBuilder, getParamNames} from "./arguments-builder";
 import {GraphQLFieldResolver} from "graphql";
 import {StringKey} from "./utils";
 import {FieldSpecKeeper} from "./field-spec";
+import {TypeNameKeeper} from "./type-name";
 
 export const COMPOSER = Symbol.for('GraphQL class metadata');
 
@@ -25,25 +26,20 @@ export class TypeComposerCreator {
                 protected typeMapper: TypeMapper,
                 protected fieldSpec: FieldSpecKeeper,
                 protected propertyTypeKeeper: PropertyTypeKeeper,
+                protected nameKeeper: TypeNameKeeper,
                 protected schemaComposer: SchemaComposer<any>) {
     }
 
-    protected getComposer<T>(typeOrInstance: ClassType<T> | T): TypeComposer<T> {
-        if (!Object.getOwnPropertyDescriptor(typeOrInstance, COMPOSER)) return null;
-        return typeOrInstance[COMPOSER];
-    }
-
-    protected setComposer<T>(typeOrInstance: ClassType<T> | T, composer: TypeComposer<T>) {
-        typeOrInstance[COMPOSER] = composer;
+    protected getComposer<T>(type: ClassType<T>): TypeComposer<T> {
+        return this.schemaComposer.getTC(this.nameKeeper.getTypeName(type))
     }
 
     getOrCreateComposer<T>(constructor: AnnotatedClass<T>): TypeComposer<T> {
         const composer = this.getComposer(constructor);
         if (!composer) {
             if (!this.fieldSpec.isDecorated(constructor)) return null;
-            this.setComposer(constructor, this.createTypeComposer(constructor));
+            return this.createTypeComposer(constructor);
         }
-        return this.getComposer(constructor);
     }
 
     protected createResolver<T>(constructor: ClassType<T>, key: StringKey<T>): GraphQLFieldResolver<T, any> {

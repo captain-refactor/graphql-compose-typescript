@@ -39,7 +39,7 @@ test('query that returns object type', async t => {
     t.is(result.data.user.name, 'Jan Kremen');
 });
 
-test.skip('mount resolver on object type', async t => {
+test('mount resolver on object type', async t => {
     class User {
         @$field() name: string = 'Jan Kremen';
     }
@@ -65,6 +65,16 @@ test.skip('mount resolver on object type', async t => {
     const result = await graphql(schema, `{user{nameLength}}`);
     t.falsy(result.errors);
     t.is(result.data.user.nameLength, 10);
+});
 
 
+test('create type twice', t => {
+    const sc = new SchemaComposer();
+    let t1 = sc.TypeComposer.create({
+        name: 'hello'
+    });
+    let t2 = sc.TypeComposer.create({
+        name: 'hello'
+    });
+    t.fail('it should fail, i hope');
 });
