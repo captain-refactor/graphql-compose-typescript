@@ -7,7 +7,7 @@ import {ArrayTypeNotSpecified, TypeNotSpecified} from "../src/graphq-compose-typ
 import {ExecutionResultDataDefault} from "graphql/execution/execute";
 import {ExecutionContext} from "ava";
 import {test} from "./_support";
-
+import {$input} from "../src/decorators/input";
 
 
 async function testResolver(t: ExecutionContext, resolver: Resolver, query?: string): Promise<ExecutionResult<ExecutionResultDataDefault>> {
@@ -199,6 +199,7 @@ test('array type not specified', async t => {
 });
 
 test('using class as input type', async t => {
+    @$input()
     class Vector {
         @$field() x: number;
         @$field() y: number;
@@ -206,7 +207,7 @@ test('using class as input type', async t => {
 
     class Service {
         @$resolver(() => Vector)
-        saveVector(@$arg('vector')vector: Vector) {
+        saveVector(@$arg('vector') vector: Vector) {
             return vector;
         }
     }

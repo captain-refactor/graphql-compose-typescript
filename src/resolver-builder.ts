@@ -42,7 +42,7 @@ export class ResolverBuilder {
         let constructor = getConstructor(instance);
         let spec = this.storage.getResolverSpec(constructor, method);
         const {typeFn} = spec;
-        const type = this.typeMapper.getPropertyGraphqlType(constructor, method, typeFn);
+        const type = this.typeMapper.getPropertyOutputType(constructor, method, typeFn);
         let args = this.argumentsBuilder.getArguments(constructor, method);
         this.queueSolver.solve();
         return new this.schemaComposer.Resolver({

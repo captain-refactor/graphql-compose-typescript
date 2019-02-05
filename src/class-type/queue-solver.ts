@@ -7,9 +7,13 @@ export class QueueSolver {
     }
 
     solve() {
-        for (const classType of this.queue.iterateUnsolved()) {
-            this.creator.createTypeComposer(classType);
-            this.queue.markSolved(classType);
+        for (const item of this.queue.iterateUnsolved()) {
+            this.creator.buildTypeComposer(item.type, item.composer);
+            this.queue.markSolved(item.type);
+        }
+        for (const item of this.queue.iterateUnsolvedInput()) {
+            this.creator.buildInputTypeComposer(item.type, item.composer);
+            this.queue.markInputSolved(item.type);
         }
     }
 

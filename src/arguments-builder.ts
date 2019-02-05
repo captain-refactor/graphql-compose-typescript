@@ -1,6 +1,7 @@
 import {ClassType, ProvidenType, TypeMapper} from "./graphq-compose-typescript";
 import {Dict, StringKey} from "./utils";
 import {ComposeFieldConfigArgumentMap, ComposeInputType} from "graphql-compose";
+import {ProvidenTypeConvertor} from "./providenTypeConvertor";
 
 export const METHOD_ARGS = Symbol.for('method args');
 export const PARAM_NAMES = Symbol.for('graphql parameters names');
@@ -46,7 +47,7 @@ export function getParamNames(constructor: ClassType, property: string): string[
 }
 
 export class ArgumentsBuilder {
-    constructor(protected typeMapper: TypeMapper) {
+    constructor(protected convertor: ProvidenTypeConvertor) {
     }
 
     getArguments<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>): ComposeFieldConfigArgumentMap {
@@ -54,7 +55,7 @@ export class ArgumentsBuilder {
         let result: ComposeFieldConfigArgumentMap = {};
         for (let name of Object.keys(args)) {
             let type: ProvidenType = args[name];
-            result[name] = this.typeMapper.mapType(type) as ComposeInputType;
+            result[name] = this.convertor.mapToInputType(type);
         }
         return result;
     }

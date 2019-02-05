@@ -61,7 +61,6 @@ test('mount resolver on object type', async t => {
     const service = new UserService();
     const composer = t.context.compose.mountInstances([service]);
     let schema = composer.buildSchema();
-    t.log(printSchema(schema));
     const result = await graphql(schema, `{user{nameLength}}`);
     t.falsy(result.errors);
     t.is(result.data.user.nameLength, 10);

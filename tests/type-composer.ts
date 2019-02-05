@@ -1,6 +1,6 @@
-import {sleep, test} from "./_support";
-import {$arg, $field, $resolver} from "../src";
-import {schemaComposer, TypeComposer} from "graphql-compose";
+import {test} from "./_support";
+import {$arg, $field} from "../src";
+import {schemaComposer} from "graphql-compose";
 import {graphql} from "graphql";
 
 test('create basic fields', t => {
