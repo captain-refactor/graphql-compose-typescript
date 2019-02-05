@@ -1,5 +1,5 @@
 import {ClassType, mapArguments, TypeFn, TypeMapper} from "./graphq-compose-typescript";
-import {Resolver} from "graphql-compose";
+import {Resolver, SchemaComposer} from "graphql-compose";
 import {getConstructor, StringKey} from "./utils";
 import {ArgumentsBuilder, getParamNames} from "./arguments-builder";
 import {QueueSolver} from "./class-type/queue-solver";
@@ -34,7 +34,8 @@ export class ResolverBuilder {
     constructor(protected typeMapper: TypeMapper,
                 protected argumentsBuilder: ArgumentsBuilder,
                 protected queueSolver: QueueSolver,
-                protected storage: ResolverSpecStorage) {
+                protected storage: ResolverSpecStorage,
+                protected schemaComposer: SchemaComposer<any>) {
     }
 
     createResolver<T>(instance: T, method: StringKey<T>) {
@@ -42,11 +43,12 @@ export class ResolverBuilder {
         let spec = this.storage.getResolverSpec(constructor, method);
         const {typeFn} = spec;
         const type = this.typeMapper.getPropertyGraphqlType(constructor, method, typeFn);
+        let args = this.argumentsBuilder.getArguments(constructor, method);
         this.queueSolver.solve();
-        return new Resolver({
+        return new this.schemaComposer.Resolver({
             name: method,
             type,
-            args: this.argumentsBuilder.getArguments(constructor, method),
+            args,
             async resolve(rp) {
                 let parameters = mapArguments(rp.args, getParamNames(constructor, method));
                 return await (instance[method] as any)(...parameters);

@@ -12,9 +12,19 @@ export class Queue {
         this.queue.set(type, true);
     }
 
-    * iterateUnsolved() {
+    * iterateUnsolved(): IterableIterator<ClassType> {
         for (const [type, solved] of this.queue) {
             if (!solved) yield type;
         }
+        if (this.hasUnresolved()) {
+            yield* this.iterateUnsolved();
+        }
+    }
+
+    protected hasUnresolved() {
+        for (let resolved of this.queue.values()) {
+            if (!resolved) return true
+        }
+        return false;
     }
 }

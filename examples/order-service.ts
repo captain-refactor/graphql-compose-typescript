@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import {graphql} from "graphql";
-import {schemaComposer} from "graphql-compose";
+import {SchemaComposer, schemaComposer} from "graphql-compose";
 import {$field, $resolver, GraphqlComposeTypescript} from "../src";
 
 class Order {
@@ -23,7 +23,7 @@ class OrderService {
 async function main(){
     let orderService = new OrderService();
 
-    let compose = GraphqlComposeTypescript.create();
+    let compose = GraphqlComposeTypescript.create(new SchemaComposer<any>());
     schemaComposer.Query.setField('getOrders', compose.getResolver(orderService,'getOrders'));
     let schema = schemaComposer.buildSchema();
     let result = await graphql(schema, `{

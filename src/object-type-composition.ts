@@ -4,7 +4,7 @@ import {
 import {
     ComposeFieldConfig,
     ComposeFieldConfigMap,
-    ComposeOutputType,
+    ComposeOutputType, InputTypeComposer,
     SchemaComposer,
     TypeComposer
 } from "graphql-compose";
@@ -12,7 +12,7 @@ import {ArgumentsBuilder, getParamNames} from "./arguments-builder";
 import {GraphQLFieldResolver} from "graphql";
 import {StringKey} from "./utils";
 import {FieldSpecKeeper} from "./field-spec";
-import {TypeNameKeeper} from "./type-name";
+import {InputTypeSpecKeeper} from "./input-type-spec";
 
 export const COMPOSER = Symbol.for('GraphQL class metadata');
 
@@ -26,23 +26,7 @@ export class TypeComposerCreator {
                 protected typeMapper: TypeMapper,
                 protected fieldSpec: FieldSpecKeeper,
                 protected propertyTypeKeeper: PropertyTypeKeeper,
-                protected nameKeeper: TypeNameKeeper,
                 protected schemaComposer: SchemaComposer<any>) {
-    }
-
-    protected getComposer<T>(type: ClassType<T>): TypeComposer<T> {
-        let name = this.nameKeeper.getTypeName(type);
-        if (this.schemaComposer.has(name)) {
-            return this.schemaComposer.getTC(name)
-        }
-        return null;
-    }
-
-    getOrCreateComposer<T>(constructor: AnnotatedClass<T>): TypeComposer<T> {
-        const composer = this.getComposer(constructor);
-        if (composer) return composer;
-        if (!this.fieldSpec.isDecorated(constructor)) return null;
-        return this.createTypeComposer(constructor);
     }
 
     protected createResolver<T>(constructor: ClassType<T>, key: StringKey<T>): GraphQLFieldResolver<T, any> {
@@ -64,13 +48,19 @@ export class TypeComposerCreator {
     }
 
     createTypeComposer<T>(constructor: ClassType<T>): TypeComposer<T> {
+        if (!this.fieldSpec.isDecorated(constructor)) return null;
         let fields: ComposeFieldConfigMap<T, any> = {};
         for (const [key, typeFn] of this.fieldSpec.getFieldTypes(constructor)) {
             fields[key] = this.createField(constructor, typeFn, key);
         }
+
         return this.schemaComposer.TypeComposer.create({
             name: constructor.name,
             fields
         });
+    }
+
+    createInputTypeComposer<T>(constructor: ClassType<T>): InputTypeComposer {
+        return null; //TODO
     }
 }
