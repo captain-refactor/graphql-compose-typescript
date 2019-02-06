@@ -14,9 +14,9 @@ export class ProvidenTypeConvertor {
     mapToOutputType(type: ProvidenType): ComposeOutputType<any, any> {
         if (!type) return null;
         if (this.classSpec.isClassType(type)) {
-            return this.getClassTypeComposer(type);
+            return this.getClassComposeType(type);
         } else if (this.classSpec.isArrayClassType(type)) {
-            return [this.getClassTypeComposer(type[0]) as any]
+            return [this.getClassComposeType(type[0])]
         } else {
             return type;
         }
@@ -25,18 +25,22 @@ export class ProvidenTypeConvertor {
     mapToInputType(type: ProvidenType): ComposeInputType {
         if (!type) return null;
         if (this.classSpec.isClassType(type)) {
-            return this.getClassInputTypeComposer(type);
+            return this.getClassInputComposeType(type);
         } else if (this.classSpec.isArrayClassType(type)) {
-            return [this.getClassInputTypeComposer(type[0])]
+            return [this.getClassInputComposeType(type[0])]
         } else {
             return type as any; //TODO: problem
         }
     }
 
-    private getClassInputTypeComposer(typeClass: ClassType): InputTypeComposer {
+    private getClassInputComposeType(typeClass: ClassType): InputTypeComposer | string {
         if (!typeClass) return null;
-        if (typeClass === Number) {
-            return this.schemaComposer.InputTypeComposer.create('Float');
+        if (typeClass === String) {
+            return 'String';
+        } else if (typeClass === Number) {
+            return 'Float';
+        } else if(typeClass === Date){
+            return 'Date';
         } else if (this.fieldSpec.isDecorated(typeClass)) {
             return this.resolutionQueue.addInput(typeClass);
         } else {
@@ -44,10 +48,14 @@ export class ProvidenTypeConvertor {
         }
     }
 
-    private getClassTypeComposer(typeClass: ClassType): TypeComposer {
+    private getClassComposeType(typeClass: ClassType): TypeComposer | string {
         if (!typeClass) return null;
-        if (typeClass === Number) {
-            return this.schemaComposer.TypeComposer.create('Float');
+        if (typeClass === String) {
+            return 'String';
+        } else if(typeClass === Date){
+            return 'Date';
+        } else if (typeClass === Number) {
+            return 'Float';
         } else if (this.fieldSpec.isDecorated(typeClass)) {
             return this.resolutionQueue.add(typeClass);
         } else {

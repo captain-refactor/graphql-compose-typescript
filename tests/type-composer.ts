@@ -17,7 +17,7 @@ test('create basic fields', t => {
     t.is(composer.getFieldType('b').toString(), 'Float');
 });
 
-test('create inherited object type', t => {
+test('create inherited object constructor', t => {
     class User {
         @$field() a: string;
     }
@@ -32,7 +32,7 @@ test('create inherited object type', t => {
     t.true(superUserComposer.hasField('a'));
     t.true(superUserComposer.hasField('b'));
 });
-test('compose type using other classes', t => {
+test('compose constructor using other classes', t => {
     class A {
         @$field() a: string;
     }

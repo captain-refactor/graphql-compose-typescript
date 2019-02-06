@@ -60,32 +60,39 @@ export class ClassSpecialist {
 }
 
 export class TypeMapper {
-
     constructor(protected providenTypeConvertor: ProvidenTypeConvertor,
                 protected propertyTypeKeeper: PropertyTypeKeeper) {
     }
 
-    getPropertyOutputType(constructor: ClassType, property: string, typeFn?: TypeFn): ComposeOutputType<any, any> {
+    getPropertyOutputType(constructor: ClassType, key: string, typeFn?: TypeFn): ComposeOutputType<any, any> {
         let providenType: ProvidenType = typeFn && typeFn();
-        let typeClass: ClassType = this.propertyTypeKeeper.getPropertyType(constructor, property);
+        let typeClass: ClassType = this.propertyTypeKeeper.getPropertyType(constructor, key);
         if (typeClass == Promise && !providenType) {
-            throw new TypeNotSpecified(constructor, property);
+            throw new TypeNotSpecified(constructor, key);
         }
         if (typeClass == Array) {
-            if (!providenType) throw new ArrayTypeNotSpecified(constructor, property);
+            if (!providenType) throw new ArrayTypeNotSpecified(constructor, key);
             if (!Array.isArray(providenType)) {
                 providenType = [providenType] as ProvidenType;
             }
         }
         let result = providenType || typeClass;
-        if (!result) throw new TypeNotSpecified(constructor, property);
+        if (!result) throw new TypeNotSpecified(constructor, key);
         return this.providenTypeConvertor.mapToOutputType(result);
     }
 
     getPropertyInputType<T>(constructor: ClassType<T>, key: StringKey<T>, typeFn: TypeFn): ComposeInputType {
-        let providenType = this.providenTypeConvertor.mapToInputType(typeFn && typeFn());
-
-        return providenType;
+        let providenType = typeFn && typeFn();
+        let typeClass: ClassType = this.propertyTypeKeeper.getPropertyType(constructor, key);
+        if (typeClass == Array) {
+            if (!providenType) throw new ArrayTypeNotSpecified(constructor, key);
+            if (!Array.isArray(providenType)) {
+                providenType = [providenType] as ProvidenType;
+            }
+        }
+        let result = providenType || typeClass;
+        if (!result) throw new TypeNotSpecified(constructor, key);
+        return this.providenTypeConvertor.mapToInputType(result);
     }
 }
 
@@ -118,8 +125,8 @@ export class GraphqlComposeTypescript {
         const nameConvertor = new TypeNameConvertor(classSpecialist);
         const ptk = new PropertyTypeKeeper();
         const fieldSpecKeeper = new FieldSpecKeeper();
-        const typeNameKeeper = new TypeNameKeeper(classSpecialist);
         const inputTypeSpecKeeper = new InputTypeSpecKeeper();
+        const typeNameKeeper = new TypeNameKeeper(inputTypeSpecKeeper);
         const queue = new Queue(schemaComposer, typeNameKeeper);
         const typeMapper = new TypeMapper(new ProvidenTypeConvertor(fieldSpecKeeper, classSpecialist, queue, schemaComposer), ptk);
         const argumentsBuilder = new ArgumentsBuilder(new ProvidenTypeConvertor(fieldSpecKeeper, classSpecialist, queue, schemaComposer));

@@ -1,6 +1,6 @@
 import {ClassType} from "./graphq-compose-typescript";
 
-const INPUT_TYPE = Symbol.for('input type');
+const INPUT_TYPE = Symbol.for('input constructor');
 
 export class InputTypeSpecKeeper {
     markAsInputType(type: ClassType) {

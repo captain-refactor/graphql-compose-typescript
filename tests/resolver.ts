@@ -126,7 +126,7 @@ test('sample app with multiple types and so on', async t => {
     t.is(data.test.id, '1');
 });
 
-test('problem with type providen type [ClassType]', async t => {
+test('problem with constructor providen constructor [ClassType]', async t => {
     class A {
         @$field()
         field: string = 'value';
@@ -152,7 +152,7 @@ test('problem with type providen type [ClassType]', async t => {
     t.deepEqual(data.test, [{field: 'value'}, {field: 'value'}]);
 });
 
-test('throw exception, when type is not specified', async t => {
+test('throw exception, when constructor is not specified', async t => {
     try {
         class Service {
             @$resolver()
@@ -182,7 +182,7 @@ test('throw exception, when type is not specified', async t => {
     }
 });
 
-test('array type not specified', async t => {
+test('array constructor not specified', async t => {
     try {
         class Service {
             @$resolver()
@@ -199,7 +199,6 @@ test('array type not specified', async t => {
 });
 
 test('using class as input type', async t => {
-    @$input()
     class Vector {
         @$field() x: number;
         @$field() y: number;
@@ -223,7 +222,7 @@ test('using class as input type', async t => {
     t.deepEqual(data.test, {x: 1, y: 15});
 });
 
-test('array return type', async t => {
+test('array return constructor', async t => {
     class Service {
         @$resolver(() => [String])
         getNames(): string[] {

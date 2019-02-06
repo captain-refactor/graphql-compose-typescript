@@ -1,13 +1,13 @@
 import {ClassType} from "../graphq-compose-typescript";
-import {ComposeInputType, ComposeOutputType, InputTypeComposer, SchemaComposer, TypeComposer} from "graphql-compose";
-import {InputTypeSpecKeeper} from "../input-type-spec";
+import {InputTypeComposer, SchemaComposer, TypeComposer} from "graphql-compose";
 import {TypeNameKeeper} from "../type-name";
 
 
 export interface QueueItem<C extends TypeComposer | InputTypeComposer> {
     composer: C;
+    kind: 'output' | 'input';
     solved: boolean;
-    type: ClassType
+    constructor: ClassType
 }
 
 export class Queue {
@@ -27,7 +27,7 @@ export class Queue {
     }
 
     private createInputTypeComposer(type: ClassType) {
-        let name = this.typeNameKeeper.getTypeName(type);
+        let name = this.typeNameKeeper.getInputTypeName(type);
         return this.schemaComposer.InputTypeComposer.create({
             name,
             fields: {}
@@ -36,13 +36,14 @@ export class Queue {
 
     add(type: ClassType): TypeComposer {
         if (this.queue.has(type)) {
-            return this.queue.get(type).composer as any; //TODO: create input type
+            return this.queue.get(type).composer;
         } else {
             let composer = this.createTypeComposer(type);
             this.queue.set(type, {
                 solved: false,
                 composer,
-                type
+                kind: 'output',
+                constructor: type
             });
             return composer;
         }
@@ -50,13 +51,14 @@ export class Queue {
 
     addInput(type: ClassType): InputTypeComposer {
         if (this.inputQueue.has(type)) {
-            return this.inputQueue.get(type).composer as any; //TODO: create input type
+            return this.inputQueue.get(type).composer;
         } else {
             let composer = this.createInputTypeComposer(type);
             this.inputQueue.set(type, {
                 solved: false,
                 composer,
-                type
+                kind: 'input',
+                constructor: type
             });
             return composer;
         }
@@ -70,8 +72,11 @@ export class Queue {
         this.inputQueue.get(type).solved = true;
     }
 
-    * iterateUnsolved(): IterableIterator<QueueItem<TypeComposer>> {
+    * iterateUnsolved(): IterableIterator<QueueItem<any>> {
         for (const [, item] of this.queue) {
+            if (!item.solved) yield item;
+        }
+        for (const [, item] of this.inputQueue) {
             if (!item.solved) yield item;
         }
         if (this.hasUnresolved()) {
@@ -79,17 +84,12 @@ export class Queue {
         }
     }
 
-    * iterateUnsolvedInput(): IterableIterator<QueueItem<InputTypeComposer>> {
-        for (const [, item] of this.inputQueue) {
-            if (!item.solved) yield item;
-        }
-        if (this.hasUnresolved()) {
-            yield* this.iterateUnsolvedInput();
-        }
-    }
-
     protected hasUnresolved() {
         for (let item of this.queue.values()) {
+            if (!item.solved) return true
+        }
+
+        for (let item of this.inputQueue.values()) {
             if (!item.solved) return true
         }
         return false;

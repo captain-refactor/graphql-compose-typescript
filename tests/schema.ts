@@ -1,7 +1,7 @@
 import {test} from "./_support";
 import {$mount} from "../src/decorators/mount";
 import {$field, $resolver} from "../src";
-import {SchemaComposer} from "graphql-compose";
+import {schemaComposer, SchemaComposer, TypeComposer} from "graphql-compose";
 import {graphql, printSchema} from "graphql";
 
 test('build simple schema', async t => {
@@ -18,7 +18,7 @@ test('build simple schema', async t => {
     t.falsy(result.errors);
     t.is(result.data.getText, 'SUCCESS');
 });
-test('query that returns object type', async t => {
+test('query that returns object constructor', async t => {
     class User {
         @$field() name: string = 'Jan Kremen';
     }
@@ -39,7 +39,7 @@ test('query that returns object type', async t => {
     t.is(result.data.user.name, 'Jan Kremen');
 });
 
-test('mount resolver on object type', async t => {
+test('mount resolver on object constructor', async t => {
     class User {
         @$field() name: string = 'Jan Kremen';
     }
@@ -64,4 +64,27 @@ test('mount resolver on object type', async t => {
     const result = await graphql(schema, `{user{nameLength}}`);
     t.falsy(result.errors);
     t.is(result.data.user.nameLength, 10);
+});
+
+test('compose', async t => {
+    let x = TypeComposer.create({
+        name: 'User',
+        fields: {
+            name: 'String',
+            age: 'Float',
+            born: 'Date'
+        }
+    });
+    schemaComposer.Query.addFields({
+        user: {
+            type: x,
+            resolve() {
+                return {
+                    name: 'Jan K',
+                    age: 15,
+                }
+            }
+        }
+    });
+    t.pass();
 });
