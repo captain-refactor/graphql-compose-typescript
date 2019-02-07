@@ -1,12 +1,12 @@
-import {ClassType, ProvidenType, TypeMapper} from "./graphq-compose-typescript";
+import {ClassType, ProvidenType, TypeFn} from "./graphq-compose-typescript";
 import {Dict, StringKey} from "./utils";
-import {ComposeFieldConfigArgumentMap, ComposeInputType} from "graphql-compose";
-import {ProvidenTypeConvertor} from "./providenTypeConvertor";
+import {ComposeFieldConfigArgumentMap} from "graphql-compose";
+import {TypeMapper} from "./type-mapper";
 
 export const METHOD_ARGS = Symbol.for('method args');
 export const PARAM_NAMES = Symbol.for('graphql parameters names');
 
-type ArgsMap<T> = Map<StringKey<T>, Dict<ProvidenType>>;
+type ArgsMap<T> = Map<StringKey<T>, Dict<TypeFn>>;
 
 export interface ClassMethodWithArgs<T> extends ClassType<T> {
     [METHOD_ARGS]?: ArgsMap<T>
@@ -22,7 +22,7 @@ function getArgsMap<T>(constructor: ClassMethodWithArgs<T>) {
     return map;
 }
 
-function getMethodArgs<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>): Dict<ProvidenType> {
+function getMethodArgs<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>): Dict<TypeFn> {
     let map: ArgsMap<T> = getArgsMap(constructor);
     if (!map.has(method)) {
         map.set(method, {});
@@ -30,32 +30,38 @@ function getMethodArgs<T>(constructor: ClassMethodWithArgs<T>, method: StringKey
     return map.get(method);
 }
 
-export function setArgumentSpec<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>, argName: string, type: ProvidenType) {
-    getMethodArgs(constructor, method)[argName] = type;
+export function setArgumentSpec<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>, argName: string, typeFn: TypeFn) {
+    getMethodArgs(constructor, method)[argName] = typeFn;
 }
 
+export class ParamsNamesKeeper {
+    setParamNameSpec(constructor: ClassType, property: string, name: string, index: number) {
+        const propertyNames = this.getParamNames(constructor, property);
+        propertyNames[index] = name;
+    }
 
-export function setParamNameSpec(constructor: ClassType, property: string, name: string, index: number) {
-    const propertyNames = getParamNames(constructor, property);
-    propertyNames[index] = name;
-}
+    getParamNames(constructor: ClassType, property: string): string[] {
+        let method = constructor.prototype[property];
+        if (!method[PARAM_NAMES]) method[PARAM_NAMES] = [];
+        return method[PARAM_NAMES];
+    }
 
-export function getParamNames(constructor: ClassType, property: string): string[] {
-    let method = constructor.prototype[property];
-    if (!method[PARAM_NAMES]) method[PARAM_NAMES] = [];
-    return method[PARAM_NAMES];
+    getArgumentIndex(constructor: ClassType, property: string, argument: string): number {
+        return this.getParamNames(constructor, property).indexOf(argument);
+    }
 }
 
 export class ArgumentsBuilder {
-    constructor(protected convertor: ProvidenTypeConvertor) {
+    constructor(protected typ: TypeMapper, protected paramsNamesKeeper:ParamsNamesKeeper) {
     }
 
     getArguments<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>): ComposeFieldConfigArgumentMap {
         let args = getMethodArgs(constructor, method);
         let result: ComposeFieldConfigArgumentMap = {};
         for (let name of Object.keys(args)) {
-            let type: ProvidenType = args[name];
-            result[name] = this.convertor.mapToInputType(type);
+            let typeFn: TypeFn = args[name];
+            let index = this.paramsNamesKeeper.getArgumentIndex(constructor, method, name);
+            result[name] = this.typ.getArgumentInputType(constructor, method, index, typeFn);
         }
         return result;
     }

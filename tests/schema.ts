@@ -4,6 +4,7 @@ import {$arg, $field, $query, $resolver} from "../src";
 import {schemaComposer, SchemaComposer, TypeComposer} from "graphql-compose";
 import {graphql, printSchema} from "graphql";
 import {MountPointIsNull} from "../src/mounting";
+import {$input} from "../src/decorators/input";
 
 test('build simple schema', async t => {
     class ServiceA {
@@ -135,4 +136,23 @@ test('mount point is null', async t => {
     } catch (e) {
         t.true(e instanceof MountPointIsNull);
     }
+});
+test('array input type', async t => {
+    @$input()
+    class SearchCriteria {
+        @$field() text: string;
+        @$field() min: number;
+        @$field() max: number;
+    }
+
+    class Service {
+        @$query()
+        search(@$arg('criteria', () => SearchCriteria) criteria: SearchCriteria[]): string {
+            return JSON.stringify(criteria)
+        }
+    }
+
+    const schema = t.context.compose.mountInstances([new Service()]).buildSchema();
+    let result = await graphql(schema, `{search(criteria:[{text: "Hello"}])}`);
+    t.falsy(result.errors);
 });

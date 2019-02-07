@@ -1,5 +1,5 @@
 import {
-    ClassType, DefaultContext, mapArguments, TypeFn, TypeMapper,
+    ClassType, DefaultContext, mapArguments, TypeFn,
 } from "./graphq-compose-typescript";
 import {
     ComposeFieldConfig,
@@ -8,13 +8,13 @@ import {
     SchemaComposer,
     TypeComposer
 } from "graphql-compose";
-import {ArgumentsBuilder, getParamNames} from "./arguments-builder";
+import {ArgumentsBuilder, ParamsNamesKeeper} from "./arguments-builder";
 import {GraphQLFieldResolver} from "graphql";
 import {StringKey} from "./utils";
 import {FieldSpecKeeper} from "./field-spec";
 import {TypeNameKeeper} from "./type-name";
 import {PropertyTypeKeeper} from "./metadata";
-import {QueueItem} from "./class-type/queue";
+import {TypeMapper} from "./type-mapper";
 
 export const COMPOSER = Symbol.for('GraphQL class metadata');
 
@@ -29,13 +29,15 @@ export class TypeComposerCreator {
                 protected fieldSpec: FieldSpecKeeper,
                 protected propertyTypeKeeper: PropertyTypeKeeper,
                 protected schemaComposer: SchemaComposer<any>,
+                protected paramsNamesKeeper:ParamsNamesKeeper,
                 protected nameKeeper: TypeNameKeeper) {
     }
 
     protected createResolver<T>(constructor: ClassType<T>, key: StringKey<T>): GraphQLFieldResolver<T, any> {
+        let paramsNamesKeeper = this.paramsNamesKeeper;
         return (source: T, args) => {
             let method: Function = constructor.prototype[key] as any;
-            return method.bind(source)(...mapArguments(args, getParamNames(constructor, key)));
+            return method.bind(source)(...mapArguments(args, paramsNamesKeeper.getParamNames(constructor, key)));
         };
     }
 

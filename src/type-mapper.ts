@@ -39,4 +39,19 @@ export class TypeMapper {
         if (!result) throw new TypeNotSpecified(constructor, key);
         return this.providenTypeConvertor.mapToInputType(result);
     }
+
+
+    getArgumentInputType<T>(constructor: ClassType<T>, key: StringKey<T>, index: number, typeFn: TypeFn): ComposeInputType {
+        let providenType = typeFn && typeFn();
+        let typeClass: ClassType = this.propertyTypeKeeper.getParameterType(constructor, key, index);
+        if (typeClass == Array) {
+            if (!providenType) throw new ArrayTypeNotSpecified(constructor, key);
+            if (!Array.isArray(providenType)) {
+                providenType = [providenType] as ProvidenType;
+            }
+        }
+        let result = providenType || typeClass;
+        if (!result) throw new TypeNotSpecified(constructor, key);
+        return this.providenTypeConvertor.mapToInputType(result);
+    }
 }

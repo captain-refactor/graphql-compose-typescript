@@ -15,6 +15,11 @@ export class PropertyTypeKeeper {
         return typeClass;
     }
 
+    getParameterType(constructor: ClassType, property: string, index: number): ClassType {
+        let types = this.getParameterTypesFromMetadata(constructor, property);
+        return types && types[index];
+    }
+
     getPropertyTypeFromMetadata(constructor: ClassType, property: string) {
         return Reflect.getMetadata('design:type', constructor.prototype, property);
     }

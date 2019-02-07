@@ -6,7 +6,7 @@ import {
 } from "graphql-compose";
 import {AnnotatedClass, TypeComposerCreator} from "./object-type-composition";
 import {Mounter, TypeNameConvertor} from "./mounting";
-import {ArgumentsBuilder} from "./arguments-builder";
+import {ArgumentsBuilder, ParamsNamesKeeper} from "./arguments-builder";
 import {ResolverBuilder, ResolverSpecStorage} from "./resolver-builder";
 import {FieldSpecKeeper} from "./field-spec";
 import {Queue} from "./class-type/queue";
@@ -91,12 +91,14 @@ export class GraphqlComposeTypescript {
         const inputTypeSpecKeeper = new InputTypeSpecKeeper();
         const typeNameKeeper = new TypeNameKeeper(inputTypeSpecKeeper);
         const queue = new Queue(schemaComposer, typeNameKeeper);
-        const typeMapper = new TypeMapper(new ProvidenTypeConvertor(fieldSpecKeeper, classSpecialist, queue, schemaComposer), ptk);
-        const argumentsBuilder = new ArgumentsBuilder(new ProvidenTypeConvertor(fieldSpecKeeper, classSpecialist, queue, schemaComposer));
-        const typeComposerCreator = new TypeComposerCreator(argumentsBuilder, typeMapper, fieldSpecKeeper, ptk, schemaComposer, typeNameKeeper);
+        let providenTypeConvertor = new ProvidenTypeConvertor(fieldSpecKeeper, classSpecialist, queue, schemaComposer);
+        const typeMapper = new TypeMapper(providenTypeConvertor, ptk);
+        let paramsNamesKeeper = new ParamsNamesKeeper();
+        const argumentsBuilder = new ArgumentsBuilder(typeMapper, paramsNamesKeeper);
+        const typeComposerCreator = new TypeComposerCreator(argumentsBuilder, typeMapper, fieldSpecKeeper, ptk, schemaComposer, paramsNamesKeeper, typeNameKeeper);
         const resolverSpecStorage = new ResolverSpecStorage();
         const queueSolver = new QueueSolver(queue, typeComposerCreator);
-        const resolverBuilder = new ResolverBuilder(typeMapper, argumentsBuilder, queueSolver, resolverSpecStorage, schemaComposer);
+        const resolverBuilder = new ResolverBuilder(typeMapper, argumentsBuilder, queueSolver, resolverSpecStorage, paramsNamesKeeper, schemaComposer);
         const mounter = new Mounter(nameConvertor, resolverBuilder);
         return new GraphqlComposeTypescript(schemaComposer, mounter, typeComposerCreator, resolverBuilder, queueSolver);
     }
