@@ -1,12 +1,10 @@
 import {
-    ComposeInputType,
     ComposeOutputType,
     Resolver,
     SchemaComposer,
     TypeComposer
 } from "graphql-compose";
 import {AnnotatedClass, TypeComposerCreator} from "./object-type-composition";
-import {StringKey} from "./utils";
 import {Mounter, TypeNameConvertor} from "./mounting";
 import {ArgumentsBuilder} from "./arguments-builder";
 import {ResolverBuilder, ResolverSpecStorage} from "./resolver-builder";
@@ -17,6 +15,7 @@ import {QueueSolver} from "./class-type/queue-solver";
 import {InputTypeSpecKeeper} from "./input-type-spec";
 import {ProvidenTypeConvertor} from "./providenTypeConvertor";
 import {PropertyTypeKeeper} from "./metadata";
+import {TypeMapper} from "./type-mapper";
 
 export type ProvidenType = ComposeOutputType<any, any> | ClassType | [ClassType];
 
@@ -59,42 +58,6 @@ export class ClassSpecialist {
     }
 }
 
-export class TypeMapper {
-    constructor(protected providenTypeConvertor: ProvidenTypeConvertor,
-                protected propertyTypeKeeper: PropertyTypeKeeper) {
-    }
-
-    getPropertyOutputType(constructor: ClassType, key: string, typeFn?: TypeFn): ComposeOutputType<any, any> {
-        let providenType: ProvidenType = typeFn && typeFn();
-        let typeClass: ClassType = this.propertyTypeKeeper.getPropertyType(constructor, key);
-        if (typeClass == Promise && !providenType) {
-            throw new TypeNotSpecified(constructor, key);
-        }
-        if (typeClass == Array) {
-            if (!providenType) throw new ArrayTypeNotSpecified(constructor, key);
-            if (!Array.isArray(providenType)) {
-                providenType = [providenType] as ProvidenType;
-            }
-        }
-        let result = providenType || typeClass;
-        if (!result) throw new TypeNotSpecified(constructor, key);
-        return this.providenTypeConvertor.mapToOutputType(result);
-    }
-
-    getPropertyInputType<T>(constructor: ClassType<T>, key: StringKey<T>, typeFn: TypeFn): ComposeInputType {
-        let providenType = typeFn && typeFn();
-        let typeClass: ClassType = this.propertyTypeKeeper.getPropertyType(constructor, key);
-        if (typeClass == Array) {
-            if (!providenType) throw new ArrayTypeNotSpecified(constructor, key);
-            if (!Array.isArray(providenType)) {
-                providenType = [providenType] as ProvidenType;
-            }
-        }
-        let result = providenType || typeClass;
-        if (!result) throw new TypeNotSpecified(constructor, key);
-        return this.providenTypeConvertor.mapToInputType(result);
-    }
-}
 
 export class GraphqlComposeTypescript {
 

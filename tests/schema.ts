@@ -3,6 +3,7 @@ import {$mount} from "../src/decorators/mount";
 import {$arg, $field, $query, $resolver} from "../src";
 import {schemaComposer, SchemaComposer, TypeComposer} from "graphql-compose";
 import {graphql, printSchema} from "graphql";
+import {MountPointIsNull} from "../src/mounting";
 
 test('build simple schema', async t => {
     class ServiceA {
@@ -116,4 +117,22 @@ test('using same recursive type multiple times', async t => {
     t.context.compose.mountInstances([new Service()]);
     t.context.compose.schemaComposer.buildSchema();
     t.pass();
+});
+
+
+test('mount point is null', async t => {
+    class Service {
+        @$resolver()
+        @$mount(() => null)
+        yours(thing: string): string {
+            return 'abcv';
+        }
+    }
+
+    try {
+        t.context.compose.mountInstances([new Service()]);
+        t.fail();
+    } catch (e) {
+        t.true(e instanceof MountPointIsNull);
+    }
 });
