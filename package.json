@@ -12,6 +12,7 @@
     "test": "npm run check && nyc ava",
     "test:watch": "ava --watch",
     "check": "tsc --noEmit",
+    "check:watch": "tsc --noEmit -w",
     "build": "tsc",
     "prepublish": "npm run build",
     "coverage-report": "nyc report --reporter=text-lcov > coverage.lcov && codecov"

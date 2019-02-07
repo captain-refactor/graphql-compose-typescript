@@ -1,6 +1,7 @@
-import {ClassType, mapOutputType, ProvidenType, toInputType} from "./graphq-compose-typescript";
+import {ClassType, ProvidenType, TypeMapper} from "./graphq-compose-typescript";
 import {Dict, StringKey} from "./utils";
-import {ComposeFieldConfigArgumentMap} from "graphql-compose";
+import {ComposeFieldConfigArgumentMap, ComposeInputType} from "graphql-compose";
+import {ProvidenTypeConvertor} from "./providenTypeConvertor";
 
 export const METHOD_ARGS = Symbol.for('method args');
 export const PARAM_NAMES = Symbol.for('graphql parameters names');
@@ -11,17 +12,6 @@ export interface ClassMethodWithArgs<T> extends ClassType<T> {
     [METHOD_ARGS]?: ArgsMap<T>
     [PARAM_NAMES]?: string[]
 }
-
-export function getArguments<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>): ComposeFieldConfigArgumentMap {
-    let args = getMethodArgs(constructor, method);
-    let result: ComposeFieldConfigArgumentMap = {};
-    for (let name of Object.keys(args)) {
-        let type: ProvidenType = args[name];
-        result[name] = toInputType(mapOutputType(type));
-    }
-    return result;
-}
-
 
 function getArgsMap<T>(constructor: ClassMethodWithArgs<T>) {
     let map = constructor[METHOD_ARGS];
@@ -54,4 +44,19 @@ export function getParamNames(constructor: ClassType, property: string): string[
     let method = constructor.prototype[property];
     if (!method[PARAM_NAMES]) method[PARAM_NAMES] = [];
     return method[PARAM_NAMES];
+}
+
+export class ArgumentsBuilder {
+    constructor(protected convertor: ProvidenTypeConvertor) {
+    }
+
+    getArguments<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>): ComposeFieldConfigArgumentMap {
+        let args = getMethodArgs(constructor, method);
+        let result: ComposeFieldConfigArgumentMap = {};
+        for (let name of Object.keys(args)) {
+            let type: ProvidenType = args[name];
+            result[name] = this.convertor.mapToInputType(type);
+        }
+        return result;
+    }
 }

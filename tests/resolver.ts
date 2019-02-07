@@ -1,18 +1,14 @@
-import {$field, GraphqlComposeTypescript} from '../src';
-import {Resolver, SchemaComposer, schemaComposer, TypeComposer} from "graphql-compose";
+import {$field} from '../src';
+import {Resolver, SchemaComposer} from "graphql-compose";
 import {$arg} from "../src";
 import {ExecutionResult, graphql, GraphQLError, GraphQLSchema, GraphQLString} from "graphql";
 import {$resolver} from "../src";
-import {ArrayTypeNotSpecified, isInstance, TypeNotSpecified} from "../src/graphq-compose-typescript";
+import {ArrayTypeNotSpecified, TypeNotSpecified} from "../src/graphq-compose-typescript";
 import {ExecutionResultDataDefault} from "graphql/execution/execute";
-import {ExecutionContext, TestInterface} from "ava";
-import avaTest from "ava";
+import {ExecutionContext} from "ava";
+import {test} from "./_support";
+import {$input} from "../src/decorators/input";
 
-interface TestContext {
-    compose: GraphqlComposeTypescript;
-}
-
-export const test: TestInterface<TestContext> = avaTest;
 
 async function testResolver(t: ExecutionContext, resolver: Resolver, query?: string): Promise<ExecutionResult<ExecutionResultDataDefault>> {
     if (!query) query = `{test}`;
@@ -38,109 +34,6 @@ async function testResolverErrors(t: ExecutionContext, resolver: Resolver, query
     return result.errors;
 }
 
-test.beforeEach('provide testing functions', t => {
-    t.context.compose = GraphqlComposeTypescript.create();
-});
-
-test('create basic fields', t => {
-
-    class User {
-        @$field() a: string;
-        @$field() b: number;
-    }
-
-    let composer = t.context.compose.getComposer(User);
-    t.true(composer.hasField('a'));
-    t.is(composer.getFieldType('a').toString(), 'String');
-    t.true(composer.hasField('b'));
-    t.is(composer.getFieldType('b').toString(), 'Float');
-});
-
-test('create inherited object type', t => {
-    class User {
-        @$field() a: string;
-    }
-
-    class SuperUser extends User {
-        @$field() b: number;
-    }
-
-    let userComposer = t.context.compose.getComposer(User);
-    t.false(userComposer.hasField('b'));
-    let superUserComposer = t.context.compose.getComposer(SuperUser);
-    t.true(superUserComposer.hasField('a'));
-    t.true(superUserComposer.hasField('b'));
-});
-test('compose type using other classes', t => {
-    class A {
-        @$field() a: string;
-    }
-
-    class B {
-        @$field() a: A;
-    }
-
-    let composer = t.context.compose.getComposer(B);
-    t.true(composer.hasField('a'));
-    t.true(composer.getFieldTC('a').hasField('a'));
-});
-
-test('types should be connected by reference, not name', t => {
-    class A {
-        @$field() a: string;
-    }
-
-    let typeA2 = TypeComposer.create({name: 'A'});
-
-
-    class B {
-        @$field(() => typeA2) a;
-    }
-
-    class C {
-        @$field(() => A) a;
-    }
-
-    const composeTsc = t.context.compose;
-
-    t.false(composeTsc.getComposer(B).getFieldTC('a').hasField('a'));
-    t.true(composeTsc.getComposer(C).getFieldTC('a').hasField('a'));
-});
-
-test('create field on class with arguments', async t => {
-    class A {
-        @$field()
-        greet(@$arg('name') name: string): string {
-            return 'hello ' + name;
-        }
-
-        @$field()
-        sayHello(): string {
-            return 'hello';
-        }
-    }
-
-    let typeComposer = t.context.compose.getComposer(A);
-
-    schemaComposer.Query.addFields({
-        geta: {
-            type: typeComposer.getType(),
-            resolve() {
-                return new A();
-            }
-        }
-    });
-    let schema = schemaComposer.buildSchema();
-    let result = await graphql(schema, `{
-        geta{
-            greet(name: "Jan")
-            sayHello
-        }
-    }`);
-    t.falsy(result.errors);
-    t.is(result.data.geta.greet, 'hello Jan');
-    t.is(result.data.geta.sayHello, 'hello');
-});
 
 test('how does resolve work', async t => {
     class A {
@@ -162,22 +55,8 @@ test('how does resolve work', async t => {
     t.is(data.test, 'SUCCESS');
 });
 
-test('isInstance function', t => {
-    class A {
-    }
-
-    t.false(isInstance(A));
-    t.false(isInstance(Object));
-    t.false(isInstance(Date));
-    t.true(isInstance(new A));
-    t.true(isInstance({}));
-    t.true(isInstance(new Date));
-});
-
 test('inheritance', t => {
     class A {
-        @$field()
-        x: boolean;
 
         @$resolver()
         get5(): number {
@@ -186,22 +65,11 @@ test('inheritance', t => {
     }
 
     class B extends A {
-        @$field()
-        y: boolean;
-
         @$resolver()
         get6(): number {
             return 6;
         }
     }
-
-    let AComposer = t.context.compose.getComposer(A);
-    t.true(AComposer.hasField('x'));
-    t.false(AComposer.hasField('y'));
-
-    let BComposer = t.context.compose.getComposer(B);
-    t.true(BComposer.hasField('x'));
-    t.true(BComposer.hasField('y'));
 
     let a = new A;
     let b = new B;
@@ -258,7 +126,7 @@ test('sample app with multiple types and so on', async t => {
     t.is(data.test.id, '1');
 });
 
-test('problem with type providen type [ClassType]', async t => {
+test('problem with constructor providen constructor [ClassType]', async t => {
     class A {
         @$field()
         field: string = 'value';
@@ -284,7 +152,7 @@ test('problem with type providen type [ClassType]', async t => {
     t.deepEqual(data.test, [{field: 'value'}, {field: 'value'}]);
 });
 
-test('throw exception, when type is not specified', async t => {
+test('throw exception, when constructor is not specified', async t => {
     try {
         class Service {
             @$resolver()
@@ -314,8 +182,7 @@ test('throw exception, when type is not specified', async t => {
     }
 });
 
-
-test('array type not specified', async t => {
+test('array constructor not specified', async t => {
     try {
         class Service {
             @$resolver()
@@ -339,7 +206,7 @@ test('using class as input type', async t => {
 
     class Service {
         @$resolver(() => Vector)
-        saveVector(@$arg('vector')vector: Vector) {
+        saveVector(@$arg('vector') vector: Vector) {
             return vector;
         }
     }
@@ -355,7 +222,7 @@ test('using class as input type', async t => {
     t.deepEqual(data.test, {x: 1, y: 15});
 });
 
-test('array return type', async t => {
+test('array return constructor', async t => {
     class Service {
         @$resolver(() => [String])
         getNames(): string[] {

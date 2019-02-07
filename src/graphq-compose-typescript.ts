@@ -1,17 +1,29 @@
-import {ComposeInputType, ComposeOutputType, Resolver, TypeComposer} from "graphql-compose";
-import {TypeAsString} from "graphql-compose/lib/TypeMapper";
-import {GraphQLOutputType} from "graphql";
-import {createResolver} from "./resolver-builder";
-import {getReturnTypeFromMetadata} from "./metadata";
-import {AnnotatedClass, getOrCreateComposer} from "./object-type-composition";
+import {
+    ComposeInputType,
+    ComposeOutputType,
+    Resolver,
+    SchemaComposer,
+    TypeComposer
+} from "graphql-compose";
+import {AnnotatedClass, TypeComposerCreator} from "./object-type-composition";
 import {StringKey} from "./utils";
+import {Mounter, TypeNameConvertor} from "./mounting";
+import {ArgumentsBuilder} from "./arguments-builder";
+import {ResolverBuilder, ResolverSpecStorage} from "./resolver-builder";
+import {FieldSpecKeeper} from "./field-spec";
+import {Queue} from "./class-type/queue";
+import {TypeNameKeeper} from "./type-name";
+import {QueueSolver} from "./class-type/queue-solver";
+import {InputTypeSpecKeeper} from "./input-type-spec";
+import {ProvidenTypeConvertor} from "./providenTypeConvertor";
+import {PropertyTypeKeeper} from "./metadata";
 
 export type ProvidenType = ComposeOutputType<any, any> | ClassType | [ClassType];
 
 export type TypeFn = () => ProvidenType;
 
 export interface DefaultContext<T> {
-    instance: T;
+
 }
 
 export function mapArguments(args: any, paramNames: string[]): any[] {
@@ -37,103 +49,93 @@ export class ArrayTypeNotSpecified extends Error {
     }
 }
 
-export function getPropertyType(constructor: ClassType, property: string): ClassType {
-    return Reflect.getMetadata('design:type', constructor.prototype, property);
-}
+export class ClassSpecialist {
+    isClassType(type: ProvidenType): type is ClassType<any> {
+        return type instanceof Function;
+    }
 
-
-export function isClassType(type: ProvidenType): type is ClassType<any> {
-    return type instanceof Function;
-}
-
-export function isArrayClassType(type: ProvidenType): type is [ClassType<any>] {
-    return Array.isArray(type) && isClassType(type[0]);
-}
-
-function mapClassType(type: ClassType): TypeComposer<any, any> | TypeAsString | GraphQLOutputType {
-    let composer = getOrCreateComposer(type);
-    if (composer) return composer;
-    if (type === Number) return 'Float';
-    return type.name;
-}
-
-export function mapOutputType(type: ProvidenType): ComposeOutputType<any, any> | null {
-    if (!type) return null;
-    if (isClassType(type)) {
-        return mapClassType(type);
-    } else if (isArrayClassType(type)) {
-        return [mapClassType(type[0])]
-    } else {
-        return type;
+    isArrayClassType(type: ProvidenType): type is [ClassType<any>] {
+        return Array.isArray(type) && this.isClassType(type[0]);
     }
 }
 
-export function isMethod<T>(constructor: ClassType<T>, name: StringKey<T>): boolean {
-    return getPropertyType(constructor, name) == Function;
-}
-
-export function getPropertyGraphqlType(constructor: ClassType, property: string, providenTypeFn?: TypeFn): ComposeOutputType<any, any> {
-    let providenType = mapOutputType(providenTypeFn && providenTypeFn());
-
-    let typeClass: ClassType = getPropertyType(constructor, property);
-
-    if (typeClass == Function) {
-        typeClass = getReturnTypeFromMetadata(constructor, property);
+export class TypeMapper {
+    constructor(protected providenTypeConvertor: ProvidenTypeConvertor,
+                protected propertyTypeKeeper: PropertyTypeKeeper) {
     }
 
-    if (typeClass == Promise && !providenType) {
-        throw new TypeNotSpecified(constructor, property);
-    }
-
-    if (typeClass == Array) {
-        if (!providenType) throw new ArrayTypeNotSpecified(constructor, property);
-        if (Array.isArray(providenType)) {
-            return providenType;
-        } else {
-            return [providenType] as ComposeOutputType<any, any>;
+    getPropertyOutputType(constructor: ClassType, key: string, typeFn?: TypeFn): ComposeOutputType<any, any> {
+        let providenType: ProvidenType = typeFn && typeFn();
+        let typeClass: ClassType = this.propertyTypeKeeper.getPropertyType(constructor, key);
+        if (typeClass == Promise && !providenType) {
+            throw new TypeNotSpecified(constructor, key);
         }
+        if (typeClass == Array) {
+            if (!providenType) throw new ArrayTypeNotSpecified(constructor, key);
+            if (!Array.isArray(providenType)) {
+                providenType = [providenType] as ProvidenType;
+            }
+        }
+        let result = providenType || typeClass;
+        if (!result) throw new TypeNotSpecified(constructor, key);
+        return this.providenTypeConvertor.mapToOutputType(result);
     }
-    let result = providenType || getGraphqlTypeFromClass(typeClass);
-    if (!result) throw new TypeNotSpecified(constructor, property);
-    return result;
-}
 
-export function getGraphqlTypeFromClass(typeClass: ClassType): ComposeOutputType<any, any> | null {
-    if (!typeClass) return null;
-    let type: ComposeOutputType<any, any> = getOrCreateComposer(typeClass);
-    if (type) return type;
-    if (typeClass === Number) {
-        type = 'Float';
-    } else {
-        type = typeClass.name;
+    getPropertyInputType<T>(constructor: ClassType<T>, key: StringKey<T>, typeFn: TypeFn): ComposeInputType {
+        let providenType = typeFn && typeFn();
+        let typeClass: ClassType = this.propertyTypeKeeper.getPropertyType(constructor, key);
+        if (typeClass == Array) {
+            if (!providenType) throw new ArrayTypeNotSpecified(constructor, key);
+            if (!Array.isArray(providenType)) {
+                providenType = [providenType] as ProvidenType;
+            }
+        }
+        let result = providenType || typeClass;
+        if (!result) throw new TypeNotSpecified(constructor, key);
+        return this.providenTypeConvertor.mapToInputType(result);
     }
-    return type;
 }
-
-export function toInputType(type: ComposeOutputType<any, any, any>): ComposeInputType {
-    if ((type as TypeComposer).getInputType) {
-        return (type as TypeComposer).getInputType();
-    }
-    return type as ComposeInputType;
-
-}
-
-export function isInstance<T>(typeOrInstance: AnnotatedClass<T> | T): typeOrInstance is T {
-    return !(typeOrInstance.constructor === Function);
-}
-
 
 export class GraphqlComposeTypescript {
+
+    constructor(public readonly schemaComposer: SchemaComposer<any>,
+                protected mounter: Mounter,
+                protected typeComposerCreator: TypeComposerCreator,
+                protected resolverBuilder: ResolverBuilder,
+                protected solver: QueueSolver) {
+    }
+
+    mountInstances(instances: any[]): SchemaComposer<any> {
+        this.mounter.mountInstances(this.schemaComposer, instances);
+        return this.schemaComposer;
+    }
+
     getComposer<T>(typeOrInstance: AnnotatedClass<T>): TypeComposer<T, DefaultContext<T>> {
-        return getOrCreateComposer(typeOrInstance);
+        let composer = this.typeComposerCreator.createTypeComposer(typeOrInstance);
+        this.solver.solve();
+        return composer;
     }
 
     getResolver<T>(instance: T, method: keyof T & string): Resolver<T> {
-        return createResolver(instance, method);
+        return this.resolverBuilder.createResolver(instance, method);
     }
 
-    static create() {
-        return new GraphqlComposeTypescript();
+    static create(schemaComposer: SchemaComposer<any>) {
+        const classSpecialist = new ClassSpecialist();
+        const nameConvertor = new TypeNameConvertor(classSpecialist);
+        const ptk = new PropertyTypeKeeper();
+        const fieldSpecKeeper = new FieldSpecKeeper();
+        const inputTypeSpecKeeper = new InputTypeSpecKeeper();
+        const typeNameKeeper = new TypeNameKeeper(inputTypeSpecKeeper);
+        const queue = new Queue(schemaComposer, typeNameKeeper);
+        const typeMapper = new TypeMapper(new ProvidenTypeConvertor(fieldSpecKeeper, classSpecialist, queue, schemaComposer), ptk);
+        const argumentsBuilder = new ArgumentsBuilder(new ProvidenTypeConvertor(fieldSpecKeeper, classSpecialist, queue, schemaComposer));
+        const typeComposerCreator = new TypeComposerCreator(argumentsBuilder, typeMapper, fieldSpecKeeper, ptk, schemaComposer, typeNameKeeper);
+        const resolverSpecStorage = new ResolverSpecStorage();
+        const queueSolver = new QueueSolver(queue, typeComposerCreator);
+        const resolverBuilder = new ResolverBuilder(typeMapper, argumentsBuilder, queueSolver, resolverSpecStorage, schemaComposer);
+        const mounter = new Mounter(nameConvertor, resolverBuilder);
+        return new GraphqlComposeTypescript(schemaComposer, mounter, typeComposerCreator, resolverBuilder, queueSolver);
     }
 }
 

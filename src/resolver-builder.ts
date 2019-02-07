@@ -1,8 +1,8 @@
-import {ClassType, getPropertyGraphqlType, mapArguments, TypeFn} from "./graphq-compose-typescript";
-import {Resolver} from "graphql-compose";
+import {ClassType, mapArguments, TypeFn, TypeMapper} from "./graphq-compose-typescript";
+import {Resolver, SchemaComposer} from "graphql-compose";
 import {getConstructor, StringKey} from "./utils";
-import {getArguments, getParamNames} from "./arguments-builder";
-
+import {ArgumentsBuilder, getParamNames} from "./arguments-builder";
+import {QueueSolver} from "./class-type/queue-solver";
 
 export const RESOLVER_SPECS = Symbol.for('resolver specifications');
 
@@ -15,29 +15,44 @@ export interface ClassWithResolversSpecs<T> extends ClassType<T> {
     [RESOLVER_SPECS]?: Map<StringKey<T>, ResolverSpec>
 }
 
-export function addResolverSpec<T>(constructor: ClassWithResolversSpecs<T>, method: StringKey<T>, typeFn: TypeFn) {
-    if (!constructor[RESOLVER_SPECS]) {
-        constructor[RESOLVER_SPECS] = new Map();
-    }
-    constructor[RESOLVER_SPECS].set(method, {method, typeFn});
-}
-
-export function getResolverSpec<T>(constructor: ClassWithResolversSpecs<T>, method: StringKey<T>) {
-    if (!constructor[RESOLVER_SPECS]) return null;
-    return constructor[RESOLVER_SPECS].get(method);
-}
-
-export function createResolver<T>(instance: T, method: StringKey<T>) {
-    let constructor = getConstructor(instance);
-    let spec = getResolverSpec(constructor, method);
-    const {typeFn} = spec;
-    return new Resolver({
-        name: method,
-        type: getPropertyGraphqlType(constructor, method, typeFn),
-        args: getArguments(constructor, method),
-        async resolve(rp) {
-            let parameters = mapArguments(rp.args, getParamNames(constructor, method));
-            return await (instance[method] as any)(...parameters);
+export class ResolverSpecStorage {
+    addResolverSpec<T>(constructor: ClassWithResolversSpecs<T>, method: StringKey<T>, typeFn: TypeFn) {
+        if (!constructor[RESOLVER_SPECS]) {
+            constructor[RESOLVER_SPECS] = new Map();
         }
-    });
+        constructor[RESOLVER_SPECS].set(method, {method, typeFn});
+    }
+
+    getResolverSpec<T>(constructor: ClassWithResolversSpecs<T>, method: StringKey<T>) {
+        if (!constructor[RESOLVER_SPECS]) return null;
+        return constructor[RESOLVER_SPECS].get(method);
+    }
+}
+
+
+export class ResolverBuilder {
+    constructor(protected typeMapper: TypeMapper,
+                protected argumentsBuilder: ArgumentsBuilder,
+                protected queueSolver: QueueSolver,
+                protected storage: ResolverSpecStorage,
+                protected schemaComposer: SchemaComposer<any>) {
+    }
+
+    createResolver<T>(instance: T, method: StringKey<T>) {
+        let constructor = getConstructor(instance);
+        let spec = this.storage.getResolverSpec(constructor, method);
+        const {typeFn} = spec;
+        const type = this.typeMapper.getPropertyOutputType(constructor, method, typeFn);
+        let args = this.argumentsBuilder.getArguments(constructor, method);
+        this.queueSolver.solve();
+        return new this.schemaComposer.Resolver({
+            name: method,
+            type,
+            args,
+            async resolve(rp) {
+                let parameters = mapArguments(rp.args, getParamNames(constructor, method));
+                return await (instance[method] as any)(...parameters);
+            }
+        });
+    }
 }
