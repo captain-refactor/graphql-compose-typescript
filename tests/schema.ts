@@ -1,6 +1,6 @@
 import {test} from "./_support";
 import {$mount} from "../src/decorators/mount";
-import {$field, $resolver} from "../src";
+import {$arg, $field, $query, $resolver} from "../src";
 import {schemaComposer, SchemaComposer, TypeComposer} from "graphql-compose";
 import {graphql, printSchema} from "graphql";
 
@@ -86,5 +86,34 @@ test('compose', async t => {
             }
         }
     });
+    t.pass();
+});
+
+test('using same recursive type multiple times', async t => {
+    class Thing {
+        @$field() x: string;
+        @$field() innerThing?: Thing;
+    }
+
+
+    class Service {
+
+        @$query()
+        mine(@$arg('thing') thing: Thing): Thing {
+            return {
+                x: 'Renault',
+            };
+        }
+
+        @$query()
+        yours(@$arg('thing') thing: Thing): Thing {
+            return {
+                x: 'abcv'
+            }
+        }
+    }
+
+    t.context.compose.mountInstances([new Service()]);
+    t.context.compose.schemaComposer.buildSchema();
     t.pass();
 });
