@@ -1,5 +1,5 @@
 import {
-    ClassType, DefaultContext, mapArguments, TypeFn,
+    ClassType, DefaultContext, InputTypeFn, mapArguments, TypeFn,
 } from "./graphq-compose-typescript";
 import {
     ComposeFieldConfig,
@@ -52,7 +52,7 @@ export class TypeComposerCreator {
         };
     }
 
-    private createInputField<T>(constructor: ClassType<T>, typeFn: TypeFn, key: StringKey<T>): ComposeInputFieldConfig {
+    private createInputField<T>(constructor: ClassType<T>, typeFn: InputTypeFn, key: StringKey<T>): ComposeInputFieldConfig {
 
         const type = this.typeMapper.getPropertyInputType(constructor, key, typeFn);
         return {
@@ -77,7 +77,7 @@ export class TypeComposerCreator {
     private createFields<T>(constructor: ClassType<T>): ComposeFieldConfigMap<T, any> {
         let fields: ComposeFieldConfigMap<T, any> = {};
         for (const [key, typeFn] of this.fieldSpec.getFieldTypes(constructor)) {
-            fields[key] = this.createField(constructor, typeFn, key);
+            fields[key] = this.createField(constructor, typeFn as TypeFn, key);
         }
         return fields;
     }
@@ -85,7 +85,7 @@ export class TypeComposerCreator {
     private createInputFields<T>(constructor: ClassType<T>): ComposeInputFieldConfigMap {
         let fields: ComposeInputFieldConfigMap = {};
         for (const [key, typeFn] of this.fieldSpec.getFieldTypes(constructor)) {
-            fields[key] = this.createInputField(constructor, typeFn, key)
+            fields[key] = this.createInputField(constructor, typeFn as InputTypeFn, key)
         }
         return fields;
     }

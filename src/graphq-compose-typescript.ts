@@ -1,4 +1,5 @@
 import {
+    ComposeInputType,
     ComposeOutputType,
     Resolver,
     SchemaComposer,
@@ -18,8 +19,10 @@ import {PropertyTypeKeeper} from "./metadata";
 import {TypeMapper} from "./type-mapper";
 
 export type ProvidenType = ComposeOutputType<any, any> | ClassType | [ClassType];
+export type ProvidenInputType = ComposeInputType | ClassType | [ClassType];
 
 export type TypeFn = () => ProvidenType;
+export type InputTypeFn = () => ProvidenInputType;
 
 export interface DefaultContext<T> {
 
@@ -49,11 +52,11 @@ export class ArrayTypeNotSpecified extends Error {
 }
 
 export class ClassSpecialist {
-    isClassType(type: ProvidenType): type is ClassType<any> {
+    isClassType(type: ProvidenType | ProvidenInputType): type is ClassType<any> {
         return type instanceof Function;
     }
 
-    isArrayClassType(type: ProvidenType): type is [ClassType<any>] {
+    isArrayClassType(type: ProvidenType | ProvidenInputType): type is [ClassType<any>] {
         return Array.isArray(type) && this.isClassType(type[0]);
     }
 }

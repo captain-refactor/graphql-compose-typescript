@@ -2,7 +2,14 @@ import {ProvidenTypeConvertor} from "./providenTypeConvertor";
 import {PropertyTypeKeeper} from "./metadata";
 import {ComposeInputType, ComposeOutputType} from "graphql-compose";
 import {StringKey} from "./utils";
-import {ArrayTypeNotSpecified, ClassType, ProvidenType, TypeFn, TypeNotSpecified} from "./graphq-compose-typescript";
+import {
+    ArrayTypeNotSpecified,
+    ClassType,
+    InputTypeFn, ProvidenInputType,
+    ProvidenType,
+    TypeFn,
+    TypeNotSpecified
+} from "./graphq-compose-typescript";
 
 export class TypeMapper {
     constructor(protected providenTypeConvertor: ProvidenTypeConvertor,
@@ -26,13 +33,13 @@ export class TypeMapper {
         return this.providenTypeConvertor.mapToOutputType(result);
     }
 
-    getPropertyInputType<T>(constructor: ClassType<T>, key: StringKey<T>, typeFn: TypeFn): ComposeInputType {
+    getPropertyInputType<T>(constructor: ClassType<T>, key: StringKey<T>, typeFn: InputTypeFn): ComposeInputType {
         let providenType = typeFn && typeFn();
         let typeClass: ClassType = this.propertyTypeKeeper.getPropertyType(constructor, key);
         if (typeClass == Array) {
             if (!providenType) throw new ArrayTypeNotSpecified(constructor, key);
             if (!Array.isArray(providenType)) {
-                providenType = [providenType] as ProvidenType;
+                providenType = [providenType] as ProvidenInputType;
             }
         }
         let result = providenType || typeClass;
@@ -41,17 +48,18 @@ export class TypeMapper {
     }
 
 
-    getArgumentInputType<T>(constructor: ClassType<T>, key: StringKey<T>, index: number, typeFn: TypeFn): ComposeInputType {
+    getArgumentInputType<T>(constructor: ClassType<T>, key: StringKey<T>, index: number, typeFn: InputTypeFn): ComposeInputType {
         let providenType = typeFn && typeFn();
         let typeClass: ClassType = this.propertyTypeKeeper.getParameterType(constructor, key, index);
         if (typeClass == Array) {
             if (!providenType) throw new ArrayTypeNotSpecified(constructor, key);
             if (!Array.isArray(providenType)) {
-                providenType = [providenType] as ProvidenType;
+                providenType = [providenType] as ProvidenInputType;
             }
         }
         let result = providenType || typeClass;
         if (!result) throw new TypeNotSpecified(constructor, key);
         return this.providenTypeConvertor.mapToInputType(result);
     }
+
 }

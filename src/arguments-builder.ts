@@ -1,4 +1,4 @@
-import {ClassType, ProvidenType, TypeFn} from "./graphq-compose-typescript";
+import {ClassType, InputTypeFn, ProvidenType, TypeFn} from "./graphq-compose-typescript";
 import {Dict, StringKey} from "./utils";
 import {ComposeFieldConfigArgumentMap} from "graphql-compose";
 import {TypeMapper} from "./type-mapper";
@@ -6,7 +6,7 @@ import {TypeMapper} from "./type-mapper";
 export const METHOD_ARGS = Symbol.for('method args');
 export const PARAM_NAMES = Symbol.for('graphql parameters names');
 
-type ArgsMap<T> = Map<StringKey<T>, Dict<TypeFn>>;
+type ArgsMap<T> = Map<StringKey<T>, Dict<InputTypeFn>>;
 
 export interface ClassMethodWithArgs<T> extends ClassType<T> {
     [METHOD_ARGS]?: ArgsMap<T>
@@ -22,7 +22,7 @@ function getArgsMap<T>(constructor: ClassMethodWithArgs<T>) {
     return map;
 }
 
-function getMethodArgs<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>): Dict<TypeFn> {
+function getMethodArgs<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>): Dict<InputTypeFn> {
     let map: ArgsMap<T> = getArgsMap(constructor);
     if (!map.has(method)) {
         map.set(method, {});
@@ -30,7 +30,7 @@ function getMethodArgs<T>(constructor: ClassMethodWithArgs<T>, method: StringKey
     return map.get(method);
 }
 
-export function setArgumentSpec<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>, argName: string, typeFn: TypeFn) {
+export function setArgumentSpec<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>, argName: string, typeFn: InputTypeFn) {
     getMethodArgs(constructor, method)[argName] = typeFn;
 }
 
@@ -59,7 +59,7 @@ export class ArgumentsBuilder {
         let args = getMethodArgs(constructor, method);
         let result: ComposeFieldConfigArgumentMap = {};
         for (let name of Object.keys(args)) {
-            let typeFn: TypeFn = args[name];
+            let typeFn: InputTypeFn = args[name];
             let index = this.paramsNamesKeeper.getArgumentIndex(constructor, method, name);
             result[name] = this.typ.getArgumentInputType(constructor, method, index, typeFn);
         }

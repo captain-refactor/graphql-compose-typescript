@@ -1,5 +1,5 @@
 import {ComposeInputType, ComposeOutputType, InputTypeComposer, SchemaComposer, TypeComposer} from "graphql-compose";
-import {ClassSpecialist, ClassType, ProvidenType} from "./graphq-compose-typescript";
+import {ClassSpecialist, ClassType, ProvidenInputType, ProvidenType} from "./graphq-compose-typescript";
 import {FieldSpecKeeper} from "./field-spec";
 import {Queue} from "./class-type/queue";
 
@@ -22,7 +22,7 @@ export class ProvidenTypeConvertor {
         }
     }
 
-    mapToInputType(type: ProvidenType): ComposeInputType {
+    mapToInputType(type: ProvidenInputType): ComposeInputType {
         if (!type) return null;
         if (this.classSpec.isClassType(type)) {
             return this.getClassInputComposeType(type);

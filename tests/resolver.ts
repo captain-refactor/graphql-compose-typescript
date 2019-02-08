@@ -7,8 +7,6 @@ import {ArrayTypeNotSpecified, TypeNotSpecified} from "../src/graphq-compose-typ
 import {ExecutionResultDataDefault} from "graphql/execution/execute";
 import {ExecutionContext} from "ava";
 import {test} from "./_support";
-import {$input} from "../src/decorators/input";
-
 
 async function testResolver(t: ExecutionContext, resolver: Resolver, query?: string): Promise<ExecutionResult<ExecutionResultDataDefault>> {
     if (!query) query = `{test}`;
@@ -264,4 +262,34 @@ test('resolve method field even on plain objects', async t => {
             wholeName: 'Jan Kremeň'
         }
     })
+});
+
+
+test('use type composer type', async t => {
+    const BookTC = t.context.schemaComposer.TypeComposer.create({
+        name: 'Book',
+        fields: {
+            pagesCount: 'Int',
+            name: 'String'
+        }
+    });
+
+    const BookITC = BookTC.getInputTypeComposer();
+
+    class BookService {
+        @$resolver(() => BookTC)
+        findBook(@$arg('book', () => BookITC) book) {
+            return book;
+        }
+    }
+
+    let result = await testResolverData(t, t.context.compose.getResolver(new BookService(), 'findBook'),
+        `{
+        test(book: {name:"abcd", pagesCount: 297}){
+            name 
+            pagesCount
+            }
+        }`);
+    t.is(result.test.name, 'abcd');
+
 });

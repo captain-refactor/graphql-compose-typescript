@@ -1,4 +1,4 @@
-import {ClassType, TypeFn} from "./graphq-compose-typescript";
+import {ClassType, InputTypeFn, TypeFn} from "./graphq-compose-typescript";
 import {Map} from 'immutable';
 import {StringKey} from "./utils";
 
@@ -10,16 +10,16 @@ export class FieldSpecKeeper {
         return !!constructor[FIELD_TYPES];
     }
 
-    setTypeSpec<T>(constructor: ClassType<T>, name: StringKey<T>, type: TypeFn) {
+    setTypeSpec<T>(constructor: ClassType<T>, name: StringKey<T>, type: TypeFn | InputTypeFn) {
         this.setFieldTypes(constructor, this.getFieldTypes(constructor).set(name, type));
     }
 
-    getFieldTypes<T>(constructor: ClassType<T>): Map<StringKey<T>, TypeFn> {
+    getFieldTypes<T>(constructor: ClassType<T>): Map<StringKey<T>, TypeFn | InputTypeFn> {
         let map = constructor[FIELD_TYPES];
         return map || Map();
     }
 
-    protected setFieldTypes<T>(constructor: ClassType<T>, types: Map<StringKey<T>, TypeFn>) {
+    protected setFieldTypes<T>(constructor: ClassType<T>, types: Map<StringKey<T>, TypeFn | InputTypeFn>) {
         constructor[FIELD_TYPES] = types;
     }
 }
