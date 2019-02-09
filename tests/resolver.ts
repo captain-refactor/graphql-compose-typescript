@@ -318,3 +318,10 @@ test('array input type property on mutation resolver', async t => {
     t.falsy(result.errors);
     t.is(result.data.submitForm, 'Thank you for your submission');
 });
+// test('array type not specified in input type', async t => {
+//     try {
+//
+//     } catch (e) {
+//         t.true(e instanceof ArrayTypeNotSpecified);
+//     }
+// });

@@ -1,5 +1,5 @@
 import {ComposeInputType, ComposeOutputType, InputTypeComposer, SchemaComposer, TypeComposer} from "graphql-compose";
-import {ClassSpecialist, ClassType, ProvidenInputType, ProvidenType} from "./graphq-compose-typescript";
+import {ClassSpecialist, ClassType, ProvidenInputType, ProvidenOutputType} from "./graphq-compose-typescript";
 import {FieldSpecKeeper} from "./field-spec";
 import {Queue} from "./class-type/queue";
 
@@ -11,7 +11,7 @@ export class ProvidenTypeConvertor {
                 protected schemaComposer: SchemaComposer<any>) {
     }
 
-    mapToOutputType(type: ProvidenType): ComposeOutputType<any, any> {
+    mapToOutputType(type: ProvidenOutputType): ComposeOutputType<any, any> {
         if (!type) return null;
         if (this.classSpec.isClassType(type)) {
             return this.getClassComposeType(type);

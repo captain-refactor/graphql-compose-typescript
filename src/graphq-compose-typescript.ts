@@ -1,12 +1,11 @@
 import {
     ComposeInputType,
-    ComposeOutputType,
-    Resolver,
+    ComposeOutputType, InputTypeComposer,
+    Resolver, schemaComposer,
     SchemaComposer,
     TypeComposer
 } from "graphql-compose";
-import {AnnotatedClass, TypeComposerCreator} from "./object-type-composition";
-import {Mounter, TypeNameConvertor} from "./mounting";
+
 import {ArgumentsBuilder, ParamsNamesKeeper} from "./arguments-builder";
 import {ResolverBuilder, ResolverSpecStorage} from "./resolver-builder";
 import {FieldSpecKeeper} from "./field-spec";
@@ -17,12 +16,19 @@ import {InputTypeSpecKeeper} from "./input-type-spec";
 import {ProvidenTypeConvertor} from "./providenTypeConvertor";
 import {PropertyTypeKeeper} from "./metadata";
 import {TypeMapper} from "./type-mapper";
+import {Mounter} from "./mounting/mounter";
+import {TypeNameConvertor} from "./mounting/type-name-convertor";
+import {MountPointSpecKeeper} from "./mounting/mountpoint-spec-keeper";
+import {TypeComposerCreator} from "./type-composer-creation/type-composer-creator";
+import {InputFieldCreator, OutputFieldCreator} from "./type-composer-creation/field-creators";
+import {ComposerBuilder} from "./type-composer-creation/composer-builder";
 
-export type ProvidenType = ComposeOutputType<any, any> | ClassType | [ClassType];
+export type ProvidenOutputType = ComposeOutputType<any, any> | ClassType | [ClassType];
 export type ProvidenInputType = ComposeInputType | ClassType | [ClassType];
 
-export type TypeFn = () => ProvidenType;
+export type OutputTypeFn = () => ProvidenOutputType;
 export type InputTypeFn = () => ProvidenInputType;
+export type TypeFn = OutputTypeFn | InputTypeFn;
 
 export interface DefaultContext<T> {
 
@@ -52,11 +58,11 @@ export class ArrayTypeNotSpecified extends Error {
 }
 
 export class ClassSpecialist {
-    isClassType(type: ProvidenType | ProvidenInputType): type is ClassType<any> {
+    isClassType(type: ProvidenOutputType | ProvidenInputType): type is ClassType<any> {
         return type instanceof Function;
     }
 
-    isArrayClassType(type: ProvidenType | ProvidenInputType): type is [ClassType<any>] {
+    isArrayClassType(type: ProvidenOutputType | ProvidenInputType): type is [ClassType<any>] {
         return Array.isArray(type) && this.isClassType(type[0]);
     }
 }
@@ -76,7 +82,7 @@ export class GraphqlComposeTypescript {
         return this.schemaComposer;
     }
 
-    getComposer<T>(typeOrInstance: AnnotatedClass<T>): TypeComposer<T, DefaultContext<T>> {
+    getComposer<T>(typeOrInstance: ClassType<T>): TypeComposer<T, DefaultContext<T>> {
         let composer = this.typeComposerCreator.createTypeComposer(typeOrInstance);
         this.solver.solve();
         return composer;
@@ -84,6 +90,10 @@ export class GraphqlComposeTypescript {
 
     getResolver<T>(instance: T, method: keyof T & string): Resolver<T> {
         return this.resolverBuilder.createResolver(instance, method);
+    }
+
+    static createGlobal() {
+        return this.create(schemaComposer);
     }
 
     static create(schemaComposer: SchemaComposer<any>) {
@@ -94,15 +104,19 @@ export class GraphqlComposeTypescript {
         const inputTypeSpecKeeper = new InputTypeSpecKeeper();
         const typeNameKeeper = new TypeNameKeeper(inputTypeSpecKeeper);
         const queue = new Queue(schemaComposer, typeNameKeeper);
-        let providenTypeConvertor = new ProvidenTypeConvertor(fieldSpecKeeper, classSpecialist, queue, schemaComposer);
+        const providenTypeConvertor = new ProvidenTypeConvertor(fieldSpecKeeper, classSpecialist, queue, schemaComposer);
         const typeMapper = new TypeMapper(providenTypeConvertor, ptk);
-        let paramsNamesKeeper = new ParamsNamesKeeper();
+        const paramsNamesKeeper = new ParamsNamesKeeper();
         const argumentsBuilder = new ArgumentsBuilder(typeMapper, paramsNamesKeeper);
-        const typeComposerCreator = new TypeComposerCreator(argumentsBuilder, typeMapper, fieldSpecKeeper, ptk, schemaComposer, paramsNamesKeeper, typeNameKeeper);
+        const outputFieldCreator = new OutputFieldCreator(argumentsBuilder, typeMapper, ptk, schemaComposer, paramsNamesKeeper);
+        const typeComposerComposerBuilder = new ComposerBuilder<TypeComposer>(fieldSpecKeeper, schemaComposer, outputFieldCreator);
+        const inputFieldCreator = new InputFieldCreator(typeMapper, schemaComposer);
+        const inputTypeComposerComposerBuilder = new ComposerBuilder<InputTypeComposer>(fieldSpecKeeper, schemaComposer, inputFieldCreator);
+        const typeComposerCreator = new TypeComposerCreator(schemaComposer, typeNameKeeper, typeComposerComposerBuilder, inputTypeComposerComposerBuilder);
         const resolverSpecStorage = new ResolverSpecStorage();
-        const queueSolver = new QueueSolver(queue, typeComposerCreator);
+        const queueSolver = new QueueSolver(queue, typeComposerComposerBuilder, inputTypeComposerComposerBuilder);
         const resolverBuilder = new ResolverBuilder(typeMapper, argumentsBuilder, queueSolver, resolverSpecStorage, paramsNamesKeeper, schemaComposer);
-        const mounter = new Mounter(nameConvertor, resolverBuilder);
+        const mounter = new Mounter(nameConvertor, resolverBuilder, new MountPointSpecKeeper());
         return new GraphqlComposeTypescript(schemaComposer, mounter, typeComposerCreator, resolverBuilder, queueSolver);
     }
 }

@@ -3,8 +3,8 @@ import {$mount} from "../src/decorators/mount";
 import {$arg, $field, $query, $resolver} from "../src";
 import {schemaComposer, SchemaComposer, TypeComposer} from "graphql-compose";
 import {graphql, printSchema} from "graphql";
-import {MountPointIsNull} from "../src/mounting";
 import {$input} from "../src/decorators/input";
+import {MountPointIsNull} from "../src/mounting/mounter";
 
 test('build simple schema', async t => {
     class ServiceA {

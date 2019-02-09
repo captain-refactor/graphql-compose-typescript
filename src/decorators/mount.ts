@@ -1,10 +1,10 @@
 import {getConstructor, StringKey} from "../utils";
-import {TypeFn} from "../graphq-compose-typescript";
-import {addMountPoint} from "../mounting";
+import {OutputTypeFn} from "../graphq-compose-typescript";
+import {MountPointSpecKeeper} from "../mounting/mountpoint-spec-keeper";
 
-export function $mount(point: TypeFn) {
+export function $mount(point: OutputTypeFn) {
     return <T>(target: T, key: StringKey<T>) => {
         const constructor = getConstructor(target);
-        addMountPoint(constructor, key, point);
+        new MountPointSpecKeeper().addMountPoint(constructor, key, point);
     };
 }

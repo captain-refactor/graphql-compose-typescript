@@ -1,4 +1,4 @@
-import {ClassType, mapArguments, TypeFn} from "./graphq-compose-typescript";
+import {ClassType, mapArguments, OutputTypeFn} from "./graphq-compose-typescript";
 import {Resolver, SchemaComposer} from "graphql-compose";
 import {getConstructor, StringKey} from "./utils";
 import {ArgumentsBuilder, ParamsNamesKeeper} from "./arguments-builder";
@@ -9,7 +9,7 @@ export const RESOLVER_SPECS = Symbol.for('resolver specifications');
 
 export interface ResolverSpec {
     method: string;
-    typeFn: TypeFn;
+    typeFn: OutputTypeFn;
 }
 
 export interface ClassWithResolversSpecs<T> extends ClassType<T> {
@@ -17,7 +17,7 @@ export interface ClassWithResolversSpecs<T> extends ClassType<T> {
 }
 
 export class ResolverSpecStorage {
-    addResolverSpec<T>(constructor: ClassWithResolversSpecs<T>, method: StringKey<T>, typeFn: TypeFn) {
+    addResolverSpec<T>(constructor: ClassWithResolversSpecs<T>, method: StringKey<T>, typeFn: OutputTypeFn) {
         if (!constructor[RESOLVER_SPECS]) {
             constructor[RESOLVER_SPECS] = new Map();
         }

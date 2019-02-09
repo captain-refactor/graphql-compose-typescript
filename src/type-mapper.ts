@@ -6,8 +6,8 @@ import {
     ArrayTypeNotSpecified,
     ClassType,
     InputTypeFn, ProvidenInputType,
-    ProvidenType,
-    TypeFn,
+    ProvidenOutputType,
+    OutputTypeFn,
     TypeNotSpecified
 } from "./graphq-compose-typescript";
 
@@ -16,8 +16,8 @@ export class TypeMapper {
                 protected propertyTypeKeeper: PropertyTypeKeeper) {
     }
 
-    getPropertyOutputType(constructor: ClassType, key: string, typeFn?: TypeFn): ComposeOutputType<any, any> {
-        let providenType: ProvidenType = typeFn && typeFn();
+    getPropertyOutputType(constructor: ClassType, key: string, typeFn?: OutputTypeFn): ComposeOutputType<any, any> {
+        let providenType: ProvidenOutputType = typeFn && typeFn();
         let typeClass: ClassType = this.propertyTypeKeeper.getPropertyType(constructor, key);
         if (typeClass == Promise && !providenType) {
             throw new TypeNotSpecified(constructor, key);
@@ -25,7 +25,7 @@ export class TypeMapper {
         if (typeClass == Array) {
             if (!providenType) throw new ArrayTypeNotSpecified(constructor, key);
             if (!Array.isArray(providenType)) {
-                providenType = [providenType] as ProvidenType;
+                providenType = [providenType] as ProvidenOutputType;
             }
         }
         let result = providenType || typeClass;

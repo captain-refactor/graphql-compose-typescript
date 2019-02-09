@@ -1,4 +1,4 @@
-import {ClassType, InputTypeFn, ProvidenType, TypeFn} from "./graphq-compose-typescript";
+import {ClassType, InputTypeFn, ProvidenOutputType, OutputTypeFn} from "./graphq-compose-typescript";
 import {Dict, StringKey} from "./utils";
 import {ComposeFieldConfigArgumentMap} from "graphql-compose";
 import {TypeMapper} from "./type-mapper";

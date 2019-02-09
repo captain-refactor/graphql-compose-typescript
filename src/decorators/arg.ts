@@ -1,4 +1,4 @@
-import {InputTypeFn, TypeFn} from "../graphq-compose-typescript";
+import {InputTypeFn, OutputTypeFn} from "../graphq-compose-typescript";
 import {ParamsNamesKeeper, setArgumentSpec} from "../arguments-builder";
 
 let paramsNamesKeeper = new ParamsNamesKeeper();
