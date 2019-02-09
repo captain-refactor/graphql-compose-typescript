@@ -54,4 +54,6 @@ main();
 
 ## Roadmap
  * Create source decorator
+ * using whole type configs in decorators
+ * enums
  * solve argument names without explicit declaration  

@@ -1,12 +1,11 @@
-import {$field} from '../src';
+import {$arg, $field, $mutation, $query, $resolver} from '../src';
 import {Resolver, SchemaComposer} from "graphql-compose";
-import {$arg} from "../src";
 import {ExecutionResult, graphql, GraphQLError, GraphQLSchema, GraphQLString} from "graphql";
-import {$resolver} from "../src";
 import {ArrayTypeNotSpecified, TypeNotSpecified} from "../src/graphq-compose-typescript";
 import {ExecutionResultDataDefault} from "graphql/execution/execute";
 import {ExecutionContext} from "ava";
 import {test} from "./_support";
+import {$input} from "../src/decorators/input";
 
 async function testResolver(t: ExecutionContext, resolver: Resolver, query?: string): Promise<ExecutionResult<ExecutionResultDataDefault>> {
     if (!query) query = `{test}`;
@@ -292,4 +291,30 @@ test('use type composer type', async t => {
         }`);
     t.is(result.test.name, 'abcd');
 
+});
+test('array input type property on mutation resolver', async t => {
+    @$input()
+    class Form {
+        @$field(() => 'String')
+        favoriteThings: string[];
+    }
+
+    class FormService {
+        @$mutation()
+        submitForm(@$arg('form') form: Form): string {
+            return 'Thank you for your submission';
+        }
+
+        @$query()
+        hello(): string {
+            return 'there must be at least one query';
+        }
+    }
+
+    const schema = t.context.compose.mountInstances([new FormService()]).buildSchema();
+    let result = await graphql(schema, `mutation { 
+        submitForm(form: {favoriteThings: ["a","b","c"] })
+     }`);
+    t.falsy(result.errors);
+    t.is(result.data.submitForm, 'Thank you for your submission');
 });
