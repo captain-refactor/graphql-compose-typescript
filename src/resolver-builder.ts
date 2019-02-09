@@ -2,7 +2,7 @@ import {ClassType, mapArguments, OutputTypeFn} from "./graphq-compose-typescript
 import {Resolver, SchemaComposer} from "graphql-compose";
 import {getConstructor, StringKey} from "./utils";
 import {ArgumentsBuilder, ParamsNamesKeeper} from "./arguments-builder";
-import {QueueSolver} from "./class-type/queue-solver";
+import {QueueSolver} from "./type-composer-creation/queue-solver";
 import {TypeMapper} from "./type-mapper";
 
 export const RESOLVER_SPECS = Symbol.for('resolver specifications');

@@ -1,7 +1,7 @@
 import {ComposeInputType, ComposeOutputType, InputTypeComposer, SchemaComposer, TypeComposer} from "graphql-compose";
 import {ClassSpecialist, ClassType, ProvidenInputType, ProvidenOutputType} from "./graphq-compose-typescript";
 import {FieldSpecKeeper} from "./field-spec";
-import {Queue} from "./class-type/queue";
+import {Queue} from "./type-composer-creation/queue";
 
 export class ProvidenTypeConvertor {
 
@@ -57,7 +57,7 @@ export class ProvidenTypeConvertor {
         } else if (typeClass === Number) {
             return 'Float';
         } else if (this.fieldSpec.isDecorated(typeClass)) {
-            return this.resolutionQueue.add(typeClass);
+            return this.resolutionQueue.addOutput(typeClass);
         } else {
             return this.schemaComposer.TypeComposer.create(typeClass.name);
         }

@@ -1,4 +1,4 @@
-import {ClassSpecialist, ClassType} from "./graphq-compose-typescript";
+import {ClassType} from "./graphq-compose-typescript";
 import {InputTypeSpecKeeper} from "./input-type-spec";
 
 const TYPE_NAME = Symbol.for('constructor name');

@@ -9,9 +9,9 @@ import {
 import {ArgumentsBuilder, ParamsNamesKeeper} from "./arguments-builder";
 import {ResolverBuilder, ResolverSpecStorage} from "./resolver-builder";
 import {FieldSpecKeeper} from "./field-spec";
-import {Queue} from "./class-type/queue";
+import {BaseQueue, createInputQueueItem, createOutputQueueItem, Queue} from "./type-composer-creation/queue";
 import {TypeNameKeeper} from "./type-name";
-import {QueueSolver} from "./class-type/queue-solver";
+import {QueueSolver} from "./type-composer-creation/queue-solver";
 import {InputTypeSpecKeeper} from "./input-type-spec";
 import {ProvidenTypeConvertor} from "./providenTypeConvertor";
 import {PropertyTypeKeeper} from "./metadata";
@@ -19,7 +19,11 @@ import {TypeMapper} from "./type-mapper";
 import {Mounter} from "./mounting/mounter";
 import {TypeNameConvertor} from "./mounting/type-name-convertor";
 import {MountPointSpecKeeper} from "./mounting/mountpoint-spec-keeper";
-import {TypeComposerCreator} from "./type-composer-creation/type-composer-creator";
+import {
+    InputComposerCreator,
+    OutputComposerCreator,
+    ComposerCreator
+} from "./type-composer-creation/composer-creator";
 import {InputFieldCreator, OutputFieldCreator} from "./type-composer-creation/field-creators";
 import {ComposerBuilder} from "./type-composer-creation/composer-builder";
 
@@ -72,7 +76,7 @@ export class GraphqlComposeTypescript {
 
     constructor(public readonly schemaComposer: SchemaComposer<any>,
                 protected mounter: Mounter,
-                protected typeComposerCreator: TypeComposerCreator,
+                protected typeComposerCreator: ComposerCreator,
                 protected resolverBuilder: ResolverBuilder,
                 protected solver: QueueSolver) {
     }
@@ -103,7 +107,11 @@ export class GraphqlComposeTypescript {
         const fieldSpecKeeper = new FieldSpecKeeper();
         const inputTypeSpecKeeper = new InputTypeSpecKeeper();
         const typeNameKeeper = new TypeNameKeeper(inputTypeSpecKeeper);
-        const queue = new Queue(schemaComposer, typeNameKeeper);
+        const inputComposerCreator = new InputComposerCreator(schemaComposer, typeNameKeeper);
+        const outputComposerCreator = new OutputComposerCreator(schemaComposer, typeNameKeeper);
+        const inputTypeComposerBaseQueue = new BaseQueue<InputTypeComposer>(inputComposerCreator, createInputQueueItem);
+        const typeComposerBaseQueue = new BaseQueue<TypeComposer>(outputComposerCreator, createOutputQueueItem);
+        const queue = new Queue(inputTypeComposerBaseQueue, typeComposerBaseQueue);
         const providenTypeConvertor = new ProvidenTypeConvertor(fieldSpecKeeper, classSpecialist, queue, schemaComposer);
         const typeMapper = new TypeMapper(providenTypeConvertor, ptk);
         const paramsNamesKeeper = new ParamsNamesKeeper();
@@ -112,7 +120,8 @@ export class GraphqlComposeTypescript {
         const typeComposerComposerBuilder = new ComposerBuilder<TypeComposer>(fieldSpecKeeper, schemaComposer, outputFieldCreator);
         const inputFieldCreator = new InputFieldCreator(typeMapper, schemaComposer);
         const inputTypeComposerComposerBuilder = new ComposerBuilder<InputTypeComposer>(fieldSpecKeeper, schemaComposer, inputFieldCreator);
-        const typeComposerCreator = new TypeComposerCreator(schemaComposer, typeNameKeeper, typeComposerComposerBuilder, inputTypeComposerComposerBuilder);
+        const typeComposerCreator = new ComposerCreator(outputComposerCreator, inputComposerCreator,
+            typeComposerComposerBuilder, inputTypeComposerComposerBuilder);
         const resolverSpecStorage = new ResolverSpecStorage();
         const queueSolver = new QueueSolver(queue, typeComposerComposerBuilder, inputTypeComposerComposerBuilder);
         const resolverBuilder = new ResolverBuilder(typeMapper, argumentsBuilder, queueSolver, resolverSpecStorage, paramsNamesKeeper, schemaComposer);
