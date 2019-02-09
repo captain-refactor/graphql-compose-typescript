@@ -6,6 +6,7 @@ import {graphql, printSchema} from "graphql";
 import {$input} from "../src/decorators/input";
 import {MountPointIsNull} from "../src/mounting/mounter";
 import {InvalidMountPoint} from "../src/mounting/type-name-convertor";
+import {ArrayTypeNotSpecified, TypeNotSpecified} from "../src/graphq-compose-typescript";
 
 test('build simple schema', async t => {
     class ServiceA {
@@ -151,11 +152,34 @@ test('array input type', async t => {
         search(@$arg('criteria', () => SearchCriteria) criteria: SearchCriteria[]): string {
             return JSON.stringify(criteria)
         }
+
+        @$query()
+        search2(@$arg('criteria', () => [SearchCriteria]) criteria: SearchCriteria[]): string {
+            return JSON.stringify(criteria)
+        }
     }
 
     const schema = t.context.compose.mountInstances([new Service()]).buildSchema();
     let result = await graphql(schema, `{search(criteria:[{text: "Hello"}])}`);
     t.falsy(result.errors);
+    result = await graphql(schema, `{search2(criteria:[{text: "Hello"}])}`);
+    t.falsy(result.errors);
+});
+
+test('argument array type not specified', async t => {
+
+    class Service {
+        @$query()
+        search(@$arg('criteria') criteria: any[]): string {
+            return JSON.stringify(criteria)
+        }
+    }
+
+    try {
+        t.context.compose.mountInstances([new Service()]).buildSchema();
+    } catch (e) {
+        t.true(e instanceof ArrayTypeNotSpecified);
+    }
 });
 
 
@@ -168,10 +192,27 @@ test('invalid mount point', async t => {
             return 'hello'
         }
     }
+
     try {
         t.context.compose.mountInstances([new Service()]);
         t.fail();
-    }catch (e) {
+    } catch (e) {
         t.true(e instanceof InvalidMountPoint);
+    }
+});
+
+test('type not specified', t => {
+    class Service {
+        @$query()
+        hello() {
+            return 'hello';
+        }
+    }
+
+    try {
+        t.context.compose.mountInstances([new Service()]);
+        t.fail();
+    } catch (e) {
+        t.true(e instanceof TypeNotSpecified);
     }
 });
