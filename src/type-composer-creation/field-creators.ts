@@ -1,7 +1,13 @@
 import {ClassType, DefaultContext, InputTypeFn, mapArguments, OutputTypeFn, TypeFn} from "../graphq-compose-typescript";
 import {StringKey} from "../utils";
-import {TypeMapper} from "../type-mapper";
-import {ComposeFieldConfig, ComposeInputFieldConfig, ComposeOutputType, SchemaComposer} from "graphql-compose";
+import {ArgumentTypeConvertor, PropertyTypeConvertor} from "../argument-type-convertor";
+import {
+    ComposeFieldConfig,
+    ComposeInputFieldConfig,
+    ComposeInputType,
+    ComposeOutputType,
+    SchemaComposer
+} from "graphql-compose";
 import {ArgumentsBuilder, ParamsNamesKeeper} from "../arguments-builder";
 import {PropertyTypeKeeper} from "../metadata";
 import {GraphQLFieldResolver} from "graphql";
@@ -13,7 +19,7 @@ export interface FieldCreator {
 export class OutputFieldCreator implements FieldCreator {
 
     constructor(protected argumentsBuilder: ArgumentsBuilder,
-                protected typeMapper: TypeMapper,
+                protected propertyTypeConvertor: PropertyTypeConvertor<ComposeOutputType<any, any>>,
                 protected propertyTypeKeeper: PropertyTypeKeeper,
                 protected schemaComposer: SchemaComposer<any>,
                 protected paramsNamesKeeper: ParamsNamesKeeper) {
@@ -29,7 +35,7 @@ export class OutputFieldCreator implements FieldCreator {
 
     createField<T>(constructor: ClassType<T>, typeFn: OutputTypeFn, key): ComposeFieldConfig<T, DefaultContext<T>> {
         let args = this.argumentsBuilder.getArguments(constructor, key);
-        let type: ComposeOutputType<any, any> = this.typeMapper.getPropertyOutputType(constructor, key, typeFn);
+        let type: ComposeOutputType<any, any> = this.propertyTypeConvertor.getPropertyType(constructor, key, typeFn);
         let resolve = this.propertyTypeKeeper.isMethod(constructor, key) ? this.createResolver(constructor, key) : undefined;
         return {
             type,
@@ -42,12 +48,12 @@ export class OutputFieldCreator implements FieldCreator {
 
 export class InputFieldCreator implements FieldCreator {
 
-    constructor(protected typeMapper: TypeMapper,
+    constructor(protected typeMapper: PropertyTypeConvertor<ComposeInputType>,
                 protected schemaComposer: SchemaComposer<any>) {
     }
 
     createField<T>(constructor: ClassType<T>, typeFn: InputTypeFn, key: StringKey<T>): ComposeInputFieldConfig {
-        const type = this.typeMapper.getPropertyInputType(constructor, key, typeFn);
+        const type = this.typeMapper.getPropertyType(constructor, key, typeFn);
         return {
             type
         }

@@ -13,9 +13,8 @@ import {BaseQueue, createInputQueueItem, createOutputQueueItem, Queue} from "./t
 import {TypeNameKeeper} from "./type-name";
 import {QueueSolver} from "./type-composer-creation/queue-solver";
 import {InputTypeSpecKeeper} from "./input-type-spec";
-import {ProvidenTypeConvertor} from "./providenTypeConvertor";
 import {PropertyTypeKeeper} from "./metadata";
-import {TypeMapper} from "./type-mapper";
+import {ArgumentTypeConvertor, PropertyTypeConvertor} from "./argument-type-convertor";
 import {Mounter} from "./mounting/mounter";
 import {TypeNameConvertor} from "./mounting/type-name-convertor";
 import {MountPointSpecKeeper} from "./mounting/mountpoint-spec-keeper";
@@ -26,9 +25,11 @@ import {
 } from "./type-composer-creation/composer-creator";
 import {InputFieldCreator, OutputFieldCreator} from "./type-composer-creation/field-creators";
 import {ComposerBuilder} from "./type-composer-creation/composer-builder";
+import {ProvidenTypeConvertor} from "./providenTypeConvertor";
 
 export type ProvidenOutputType = ComposeOutputType<any, any> | ClassType | [ClassType];
 export type ProvidenInputType = ComposeInputType | ClassType | [ClassType];
+export type ProvidenType = ProvidenInputType | ProvidenOutputType;
 
 export type OutputTypeFn = () => ProvidenOutputType;
 export type InputTypeFn = () => ProvidenInputType;
@@ -112,19 +113,22 @@ export class GraphqlComposeTypescript {
         const inputTypeComposerBaseQueue = new BaseQueue<InputTypeComposer>(inputComposerCreator, createInputQueueItem);
         const typeComposerBaseQueue = new BaseQueue<TypeComposer>(outputComposerCreator, createOutputQueueItem);
         const queue = new Queue(inputTypeComposerBaseQueue, typeComposerBaseQueue);
-        const providenTypeConvertor = new ProvidenTypeConvertor(fieldSpecKeeper, classSpecialist, queue, schemaComposer);
-        const typeMapper = new TypeMapper(providenTypeConvertor, ptk);
+        const providenInputTypeConvertor = new ProvidenTypeConvertor<ComposeInputType>(classSpecialist, fieldSpecKeeper, inputTypeComposerBaseQueue, inputComposerCreator);
+        const providenOutputTypeConvertor = new ProvidenTypeConvertor<ComposeOutputType<any, any>>(classSpecialist, fieldSpecKeeper, typeComposerBaseQueue, outputComposerCreator);
+        const typeMapper = new ArgumentTypeConvertor(ptk, providenInputTypeConvertor);
         const paramsNamesKeeper = new ParamsNamesKeeper();
         const argumentsBuilder = new ArgumentsBuilder(typeMapper, paramsNamesKeeper);
-        const outputFieldCreator = new OutputFieldCreator(argumentsBuilder, typeMapper, ptk, schemaComposer, paramsNamesKeeper);
+        const propertyOutputTypeConvertor = new PropertyTypeConvertor<ComposeOutputType<any, any>>(providenOutputTypeConvertor, ptk);
+        const outputFieldCreator = new OutputFieldCreator(argumentsBuilder, propertyOutputTypeConvertor, ptk, schemaComposer, paramsNamesKeeper);
         const typeComposerComposerBuilder = new ComposerBuilder<TypeComposer>(fieldSpecKeeper, schemaComposer, outputFieldCreator);
-        const inputFieldCreator = new InputFieldCreator(typeMapper, schemaComposer);
+        const propertyInputTypeConvertor = new PropertyTypeConvertor<ComposeInputType>(providenInputTypeConvertor, ptk);
+        const inputFieldCreator = new InputFieldCreator(propertyInputTypeConvertor, schemaComposer);
         const inputTypeComposerComposerBuilder = new ComposerBuilder<InputTypeComposer>(fieldSpecKeeper, schemaComposer, inputFieldCreator);
         const typeComposerCreator = new ComposerCreator(outputComposerCreator, inputComposerCreator,
             typeComposerComposerBuilder, inputTypeComposerComposerBuilder);
         const resolverSpecStorage = new ResolverSpecStorage();
         const queueSolver = new QueueSolver(queue, typeComposerComposerBuilder, inputTypeComposerComposerBuilder);
-        const resolverBuilder = new ResolverBuilder(typeMapper, argumentsBuilder, queueSolver, resolverSpecStorage, paramsNamesKeeper, schemaComposer);
+        const resolverBuilder = new ResolverBuilder(propertyOutputTypeConvertor, argumentsBuilder, queueSolver, resolverSpecStorage, paramsNamesKeeper, schemaComposer);
         const mounter = new Mounter(nameConvertor, resolverBuilder, new MountPointSpecKeeper());
         return new GraphqlComposeTypescript(schemaComposer, mounter, typeComposerCreator, resolverBuilder, queueSolver);
     }

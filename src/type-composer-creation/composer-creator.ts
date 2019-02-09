@@ -24,7 +24,8 @@ export class ComposerCreator {
 }
 
 export interface ComposerInstanceCreator<C extends TypeComposer | InputTypeComposer> {
-    create(type: ClassType): C
+    create(type: ClassType): C;
+    createFromString(text: string): C;
 }
 
 export class InputComposerCreator implements ComposerInstanceCreator<InputTypeComposer> {
@@ -38,6 +39,10 @@ export class InputComposerCreator implements ComposerInstanceCreator<InputTypeCo
             fields: undefined
         });
     }
+
+    createFromString(text: string): InputTypeComposer {
+        return this.schemaComposer.InputTypeComposer.create(text);
+    }
 }
 
 export class OutputComposerCreator implements ComposerInstanceCreator<TypeComposer> {
@@ -48,7 +53,10 @@ export class OutputComposerCreator implements ComposerInstanceCreator<TypeCompos
     create(type: ClassType): TypeComposer {
         return this.schemaComposer.TypeComposer.create({
             name: this.nameKeeper.getTypeName(type),
-            fields: undefined
         });
+    }
+
+    createFromString(text: string): TypeComposer {
+        return this.schemaComposer.TypeComposer.create(text);
     }
 }

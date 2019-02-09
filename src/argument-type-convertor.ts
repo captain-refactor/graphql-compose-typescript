@@ -1,4 +1,3 @@
-import {ProvidenTypeConvertor} from "./providenTypeConvertor";
 import {PropertyTypeKeeper} from "./metadata";
 import {ComposeInputType, ComposeOutputType} from "graphql-compose";
 import {StringKey} from "./utils";
@@ -8,16 +7,18 @@ import {
     InputTypeFn, ProvidenInputType,
     ProvidenOutputType,
     OutputTypeFn,
-    TypeNotSpecified
+    TypeNotSpecified, TypeFn, ProvidenType
 } from "./graphq-compose-typescript";
+import {ComposeType, ProvidenTypeConvertor} from "./providenTypeConvertor";
 
-export class TypeMapper {
-    constructor(protected providenTypeConvertor: ProvidenTypeConvertor,
+
+export class PropertyTypeConvertor<T extends ComposeType> {
+    constructor(protected typeConvertor: ProvidenTypeConvertor<T>,
                 protected propertyTypeKeeper: PropertyTypeKeeper) {
     }
 
-    getPropertyOutputType(constructor: ClassType, key: string, typeFn?: OutputTypeFn): ComposeOutputType<any, any> {
-        let providenType: ProvidenOutputType = typeFn && typeFn();
+    getPropertyType(constructor: ClassType, key: string, typeFn?: TypeFn): T {
+        let providenType: ProvidenType = typeFn && typeFn();
         let typeClass: ClassType = this.propertyTypeKeeper.getPropertyType(constructor, key);
         if (typeClass == Promise && !providenType) {
             throw new TypeNotSpecified(constructor, key);
@@ -30,23 +31,14 @@ export class TypeMapper {
         }
         let result = providenType || typeClass;
         if (!result) throw new TypeNotSpecified(constructor, key);
-        return this.providenTypeConvertor.mapToOutputType(result);
+        return this.typeConvertor.toComposeType(result);
     }
+}
 
-    getPropertyInputType<T>(constructor: ClassType<T>, key: StringKey<T>, typeFn: InputTypeFn): ComposeInputType {
-        let providenType = typeFn && typeFn();
-        let typeClass: ClassType = this.propertyTypeKeeper.getPropertyType(constructor, key);
-        if (typeClass == Array) {
-            if (!providenType) throw new ArrayTypeNotSpecified(constructor, key);
-            if (!Array.isArray(providenType)) {
-                providenType = [providenType] as ProvidenInputType;
-            }
-        }
-        let result = providenType || typeClass;
-        if (!result) throw new TypeNotSpecified(constructor, key);
-        return this.providenTypeConvertor.mapToInputType(result);
+export class ArgumentTypeConvertor {
+    constructor(protected propertyTypeKeeper: PropertyTypeKeeper,
+                protected typeConvertor: ProvidenTypeConvertor<ComposeInputType>) {
     }
-
 
     getArgumentInputType<T>(constructor: ClassType<T>, key: StringKey<T>, index: number, typeFn: InputTypeFn): ComposeInputType {
         let providenType = typeFn && typeFn();
@@ -59,7 +51,7 @@ export class TypeMapper {
         }
         let result = providenType || typeClass;
         if (!result) throw new TypeNotSpecified(constructor, key);
-        return this.providenTypeConvertor.mapToInputType(result);
+        return this.typeConvertor.toComposeType(result);
     }
 
 }

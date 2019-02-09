@@ -1,65 +1,48 @@
-import {ComposeInputType, ComposeOutputType, InputTypeComposer, SchemaComposer, TypeComposer} from "graphql-compose";
-import {ClassSpecialist, ClassType, ProvidenInputType, ProvidenOutputType} from "./graphq-compose-typescript";
+import {
+    ClassSpecialist,
+    ClassType,
+    ProvidenType
+} from "./graphq-compose-typescript";
 import {FieldSpecKeeper} from "./field-spec";
-import {Queue} from "./type-composer-creation/queue";
+import {BaseQueue} from "./type-composer-creation/queue";
+import {ComposerInstanceCreator} from "./type-composer-creation/composer-creator";
+import {IOComposers} from "./utils";
+import {ComposeInputType, ComposeOutputType} from "graphql-compose";
 
-export class ProvidenTypeConvertor {
+export type ComposeType = ComposeInputType | ComposeOutputType<any, any>;
+export type ComposerIn<T extends ComposeType> = Extract<IOComposers, T>
 
-    constructor(protected fieldSpec: FieldSpecKeeper,
-                protected classSpec: ClassSpecialist,
-                protected resolutionQueue: Queue,
-                protected schemaComposer: SchemaComposer<any>) {
+export class ProvidenTypeConvertor<T extends ComposeType, C extends ComposerIn<T> = ComposerIn<T>> {
+
+    constructor(protected classSpec: ClassSpecialist,
+                protected fieldSpec: FieldSpecKeeper,
+                protected queue: BaseQueue<C>,
+                protected creator: ComposerInstanceCreator<C>) {
     }
 
-    mapToOutputType(type: ProvidenOutputType): ComposeOutputType<any, any> {
+    toComposeType(type: ProvidenType): T {
         if (!type) return null;
         if (this.classSpec.isClassType(type)) {
-            return this.getClassComposeType(type);
+            return this.classToComposeType(type);
         } else if (this.classSpec.isArrayClassType(type)) {
-            return [this.getClassComposeType(type[0])]
+            return [this.classToComposeType(type[0])] as any
         } else {
-            return type;
+            return type as any;
         }
     }
 
-    mapToInputType(type: ProvidenInputType): ComposeInputType {
-        if (!type) return null;
-        if (this.classSpec.isClassType(type)) {
-            return this.getClassInputComposeType(type);
-        } else if (this.classSpec.isArrayClassType(type)) {
-            return [this.getClassInputComposeType(type[0])]
-        } else {
-            return type as any; //TODO: problem
-        }
-    }
-
-    private getClassInputComposeType(typeClass: ClassType): InputTypeComposer | string {
+    classToComposeType(typeClass: ClassType): T {
         if (!typeClass) return null;
         if (typeClass === String) {
-            return 'String';
+            return 'String' as any;
+        } else if (typeClass === Date) {
+            return 'Date' as any;
         } else if (typeClass === Number) {
-            return 'Float';
-        } else if(typeClass === Date){
-            return 'Date';
+            return 'Float' as any;
         } else if (this.fieldSpec.isDecorated(typeClass)) {
-            return this.resolutionQueue.addInput(typeClass);
+            return this.queue.add(typeClass);
         } else {
-            return this.schemaComposer.InputTypeComposer.create(typeClass.name);
-        }
-    }
-
-    private getClassComposeType(typeClass: ClassType): TypeComposer | string {
-        if (!typeClass) return null;
-        if (typeClass === String) {
-            return 'String';
-        } else if(typeClass === Date){
-            return 'Date';
-        } else if (typeClass === Number) {
-            return 'Float';
-        } else if (this.fieldSpec.isDecorated(typeClass)) {
-            return this.resolutionQueue.addOutput(typeClass);
-        } else {
-            return this.schemaComposer.TypeComposer.create(typeClass.name);
+            return this.creator.createFromString(typeClass.name);
         }
     }
 }

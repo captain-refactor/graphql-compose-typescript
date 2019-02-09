@@ -1,7 +1,7 @@
 import {ClassType, InputTypeFn, ProvidenOutputType, OutputTypeFn} from "./graphq-compose-typescript";
 import {Dict, StringKey} from "./utils";
 import {ComposeFieldConfigArgumentMap} from "graphql-compose";
-import {TypeMapper} from "./type-mapper";
+import {ArgumentTypeConvertor} from "./argument-type-convertor";
 
 export const METHOD_ARGS = Symbol.for('method args');
 export const PARAM_NAMES = Symbol.for('graphql parameters names');
@@ -52,7 +52,7 @@ export class ParamsNamesKeeper {
 }
 
 export class ArgumentsBuilder {
-    constructor(protected typ: TypeMapper, protected paramsNamesKeeper:ParamsNamesKeeper) {
+    constructor(protected typ: ArgumentTypeConvertor, protected paramsNamesKeeper:ParamsNamesKeeper) {
     }
 
     getArguments<T>(constructor: ClassMethodWithArgs<T>, method: StringKey<T>): ComposeFieldConfigArgumentMap {
