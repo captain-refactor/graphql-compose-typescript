@@ -2,7 +2,6 @@ import {GraphqlComposeTypescriptError, PropertyError} from "../error";
 import {ResolverBuilder} from "../resolver-builder";
 import {ComposeOutputType, SchemaComposer, TypeComposer} from "graphql-compose";
 import {getConstructor, isString} from "../utils";
-import {TypeNameConvertor} from "./type-name-convertor";
 import {MountPoint, MountPointSpecKeeper} from "./mountpoint-spec-keeper";
 import {ProvidenTypeConvertor} from "../providenTypeConvertor";
 import {ClassSpecialist} from "../graphq-compose-typescript";
