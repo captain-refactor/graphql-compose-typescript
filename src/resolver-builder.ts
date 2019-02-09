@@ -6,6 +6,7 @@ import {QueueSolver} from "./type-composer-creation/queue-solver";
 import {ArgumentTypeConvertor, PropertyTypeConvertor} from "./argument-type-convertor";
 import {ProvidenTypeConvertor} from "./providenTypeConvertor";
 import {SourceArgSpecKeeper} from "./resolver/source-arg-spec-keeper";
+import {ContextSpecKeeper} from "./context/context-spec-keeper";
 
 export const RESOLVER_SPECS = Symbol.for('resolver specifications');
 
@@ -41,6 +42,7 @@ export class ResolverBuilder {
                 protected storage: ResolverSpecStorage,
                 protected paramsNamesKeeper: ParamsNamesKeeper,
                 protected sourceArgSpecKeeper: SourceArgSpecKeeper,
+                protected contextSpecKeeper: ContextSpecKeeper,
                 protected schemaComposer: SchemaComposer<any>) {
     }
 
@@ -53,6 +55,7 @@ export class ResolverBuilder {
         this.queueSolver.solve();
         const paramNames = this.paramsNamesKeeper.getParamNames(constructor, method);
         const sourceSpec = this.sourceArgSpecKeeper.getMethodSourceArgSpec(constructor, method);
+        const contextIndex = this.contextSpecKeeper.getContextParameterIndex(constructor, method);
 
         return new this.schemaComposer.Resolver({
             name: method,
@@ -66,6 +69,9 @@ export class ResolverBuilder {
                         source = source[sourceSpec.property];
                     }
                     parameters[sourceSpec.parameterIndex] = source;
+                }
+                if (contextIndex != null) {
+                    parameters[contextIndex] = rp.context;
                 }
                 return await (instance[method] as any)(...parameters);
             }
