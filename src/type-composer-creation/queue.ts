@@ -1,9 +1,10 @@
-import {ClassType} from "../graphq-compose-typescript";
+import {ClassType, ProvidenType} from "../graphq-compose-typescript";
 import {InputTypeComposer, TypeComposer} from "graphql-compose";
 import {ComposerInstanceCreator} from "./composer-creator";
 
 class QueueItem<C extends TypeComposer | InputTypeComposer> {
     solved: boolean = false;
+
     constructor(public classType: ClassType, public composer: C) {
     }
 }
@@ -11,7 +12,7 @@ class QueueItem<C extends TypeComposer | InputTypeComposer> {
 export class InputTypeQueueItem extends QueueItem<InputTypeComposer> {
 }
 
-export class OutputTypeQueueItem extends  QueueItem<TypeComposer> {
+export class OutputTypeQueueItem extends QueueItem<TypeComposer> {
 }
 
 export function createOutputQueueItem(classType: ClassType, composer: TypeComposer) {
@@ -24,17 +25,19 @@ export function createInputQueueItem(classType: ClassType, composer: InputTypeCo
 }
 
 export interface CreateQueueItem<C extends TypeComposer | InputTypeComposer> {
-    (constructor: ClassType, composer: C): QueueItem<C>
+    (constructor: ProvidenTypeSingular, composer: C): QueueItem<C>
 }
+
+export type ProvidenTypeSingular = Exclude<ProvidenType, Array<any>>
 
 export class BaseQueue<C extends TypeComposer | InputTypeComposer> {
     constructor(protected instanceCreator: ComposerInstanceCreator<C>,
                 protected createQueueItem: CreateQueueItem<C>) {
     }
 
-    protected queue: Map<ClassType, QueueItem<C>> = new Map();
+    protected queue: Map<ProvidenTypeSingular, QueueItem<C>> = new Map();
 
-    add(type: ClassType): C {
+    add(type: ProvidenTypeSingular): C {
         if (this.queue.has(type)) {
             return this.queue.get(type).composer;
         } else {
@@ -44,7 +47,7 @@ export class BaseQueue<C extends TypeComposer | InputTypeComposer> {
         }
     }
 
-    markSolved(type: ClassType) {
+    markSolved(type: ProvidenTypeSingular) {
         this.queue.get(type).solved = true;
     }
 

@@ -27,8 +27,8 @@ import {InputFieldCreator, OutputFieldCreator} from "./type-composer-creation/fi
 import {ComposerBuilder} from "./type-composer-creation/composer-builder";
 import {ProvidenTypeConvertor} from "./providenTypeConvertor";
 
-export type ProvidenOutputType = ComposeOutputType<any, any> | ClassType | [ClassType];
-export type ProvidenInputType = ComposeInputType | ClassType | [ClassType];
+export type ProvidenOutputType = ComposeOutputType<any, any> | ClassType | Array<ClassType>;
+export type ProvidenInputType = ComposeInputType | ClassType | Array<ClassType>;
 export type ProvidenType = ProvidenInputType | ProvidenOutputType;
 
 export type OutputTypeFn = () => ProvidenOutputType;
@@ -129,7 +129,8 @@ export class GraphqlComposeTypescript {
         const resolverSpecStorage = new ResolverSpecStorage();
         const queueSolver = new QueueSolver(queue, typeComposerComposerBuilder, inputTypeComposerComposerBuilder);
         const resolverBuilder = new ResolverBuilder(propertyOutputTypeConvertor, argumentsBuilder, queueSolver, resolverSpecStorage, paramsNamesKeeper, schemaComposer);
-        const mounter = new Mounter(nameConvertor, resolverBuilder, new MountPointSpecKeeper());
+        const mountPointSpecKeeper = new MountPointSpecKeeper();
+        const mounter = new Mounter(providenOutputTypeConvertor, resolverBuilder, classSpecialist, mountPointSpecKeeper);
         return new GraphqlComposeTypescript(schemaComposer, mounter, typeComposerCreator, resolverBuilder, queueSolver);
     }
 }

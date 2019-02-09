@@ -2,6 +2,7 @@ import {InputTypeComposer, SchemaComposer, TypeComposer} from "graphql-compose";
 import {TypeNameKeeper} from "../type-name";
 import {ClassType} from "../graphq-compose-typescript";
 import {ComposerBuilder} from "./composer-builder";
+import {ProvidenTypeSingular} from "./queue";
 
 export class ComposerCreator {
     constructor(protected outputCreator: ComposerInstanceCreator<TypeComposer>,
@@ -24,7 +25,7 @@ export class ComposerCreator {
 }
 
 export interface ComposerInstanceCreator<C extends TypeComposer | InputTypeComposer> {
-    create(type: ClassType): C;
+    create(type: ProvidenTypeSingular): C;
     createFromString(text: string): C;
 }
 

@@ -2,11 +2,12 @@ import {test} from "./_support";
 import {$mount} from "../src/decorators/mount";
 import {$arg, $field, $query, $resolver} from "../src";
 import {schemaComposer, SchemaComposer, TypeComposer} from "graphql-compose";
-import {graphql, printSchema} from "graphql";
+import {graphql} from "graphql";
 import {$input} from "../src/decorators/input";
-import {MountPointIsNull} from "../src/mounting/mounter";
-import {InvalidMountPoint} from "../src/mounting/type-name-convertor";
+import {MountPointIsNull} from "../src";
 import {ArrayTypeNotSpecified, TypeNotSpecified} from "../src/graphq-compose-typescript";
+import {$source} from "../src/decorators/source";
+import {InvalidMountPoint} from "../src/mounting/mounter";
 
 test('build simple schema', async t => {
     class ServiceA {
@@ -22,6 +23,7 @@ test('build simple schema', async t => {
     t.falsy(result.errors);
     t.is(result.data.getText, 'SUCCESS');
 });
+
 test('query that returns object constructor', async t => {
     class User {
         @$field() name: string = 'Jan Kremen';
@@ -215,4 +217,38 @@ test('type not specified', t => {
     } catch (e) {
         t.true(e instanceof TypeNotSpecified);
     }
+});
+test('source parameter', async t => {
+    class User {
+        @$field() name: string;
+        @$field() surname: string;
+    }
+
+    class Service {
+        @$resolver()
+        @$mount(() => User)
+        fullName(@$source() user: User): string {
+            return `${user.name} ${user.surname}`;
+        }
+
+        @$query()
+        getUser(): User {
+            return {
+                name: 'Jan',
+                surname: 'Kremen',
+            };
+        }
+    }
+
+    let schema = t.context.compose.mountInstances([new Service()]).buildSchema();
+    let result = await graphql(schema, `
+    {
+        getUser {
+            fullName
+        }
+    }
+    `);
+    t.falsy(result.errors);
+    t.is(result.data.getUser.fullName, 'Jan Kremen');
+
 });

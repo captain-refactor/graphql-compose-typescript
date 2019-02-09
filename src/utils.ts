@@ -10,3 +10,7 @@ export function getConstructor<T>(instance: T): ClassType<T> {
 }
 
 export type IOComposers = TypeComposer | InputTypeComposer;
+
+export function isString(obj: any): obj is string {
+    return typeof obj === 'string' || obj instanceof String;
+}
