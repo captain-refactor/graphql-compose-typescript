@@ -5,6 +5,7 @@ import {schemaComposer, SchemaComposer, TypeComposer} from "graphql-compose";
 import {graphql, printSchema} from "graphql";
 import {$input} from "../src/decorators/input";
 import {MountPointIsNull} from "../src/mounting/mounter";
+import {InvalidMountPoint} from "../src/mounting/type-name-convertor";
 
 test('build simple schema', async t => {
     class ServiceA {
@@ -155,4 +156,22 @@ test('array input type', async t => {
     const schema = t.context.compose.mountInstances([new Service()]).buildSchema();
     let result = await graphql(schema, `{search(criteria:[{text: "Hello"}])}`);
     t.falsy(result.errors);
+});
+
+
+test('invalid mount point', async t => {
+    class Service {
+
+        @$mount(() => [])
+        @$resolver()
+        hello(): string {
+            return 'hello'
+        }
+    }
+    try {
+        t.context.compose.mountInstances([new Service()]);
+        t.fail();
+    }catch (e) {
+        t.true(e instanceof InvalidMountPoint);
+    }
 });
