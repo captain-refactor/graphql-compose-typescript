@@ -30,4 +30,8 @@ export class SourceArgSpecKeeper {
         this.setConfigMap(constructor, this.getConfigMap(constructor).set(method, spec));
     }
 
+    getMethodSourceArgSpec<T>(constructor: ClassType<T>, method: StringKey<T>) {
+        return this.getConfigMap(constructor).get(method);
+    }
+
 }

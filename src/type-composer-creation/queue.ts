@@ -1,38 +1,43 @@
-import {ClassType, ProvidenType} from "../graphq-compose-typescript";
-import {InputTypeComposer, TypeComposer} from "graphql-compose";
+import {ProvidenType} from "../graphq-compose-typescript";
+import {EnumTypeComposer, InputTypeComposer, Resolver, TypeComposer} from "graphql-compose";
 import {ComposerInstanceCreator} from "./composer-creator";
+import {
+    GraphQLEnumType,
+    GraphQLInterfaceType,
+    GraphQLList,
+    GraphQLObjectType,
+    GraphQLScalarType,
+    GraphQLUnionType
+} from "graphql";
 
 class QueueItem<C extends TypeComposer | InputTypeComposer> {
     solved: boolean = false;
 
-    constructor(public classType: ClassType, public composer: C) {
+    constructor(public classType: ProvidenTypeSingular, public composer: C) {
     }
 }
 
 export class InputTypeQueueItem extends QueueItem<InputTypeComposer> {
+    static create(classType: ProvidenTypeSingular, composer: InputTypeComposer) {
+        return new InputTypeQueueItem(classType, composer);
+    }
 }
 
 export class OutputTypeQueueItem extends QueueItem<TypeComposer> {
+    static create(classType: ProvidenTypeSingular, composer: TypeComposer) {
+        return new OutputTypeQueueItem(classType, composer);
+    }
 }
 
-export function createOutputQueueItem(classType: ClassType, composer: TypeComposer) {
-    return new OutputTypeQueueItem(classType, composer);
+export interface QueueItemFactory<C extends TypeComposer | InputTypeComposer> {
+    create(constructor: ProvidenTypeSingular, composer: C): QueueItem<C>
 }
 
-export function createInputQueueItem(classType: ClassType, composer: InputTypeComposer) {
-    return new InputTypeQueueItem(classType, composer);
-
-}
-
-export interface CreateQueueItem<C extends TypeComposer | InputTypeComposer> {
-    (constructor: ProvidenTypeSingular, composer: C): QueueItem<C>
-}
-
-export type ProvidenTypeSingular = Exclude<ProvidenType, Array<any>>
+export type ProvidenTypeSingular = Exclude<ProvidenType, Array<any> | EnumTypeComposer | GraphQLList<any> | GraphQLScalarType | GraphQLEnumType | GraphQLObjectType | GraphQLInterfaceType | GraphQLUnionType | Resolver>
 
 export class BaseQueue<C extends TypeComposer | InputTypeComposer> {
     constructor(protected instanceCreator: ComposerInstanceCreator<C>,
-                protected createQueueItem: CreateQueueItem<C>) {
+                protected queueItemFactory: QueueItemFactory<C>) {
     }
 
     protected queue: Map<ProvidenTypeSingular, QueueItem<C>> = new Map();
@@ -42,9 +47,13 @@ export class BaseQueue<C extends TypeComposer | InputTypeComposer> {
             return this.queue.get(type).composer;
         } else {
             let composer = this.instanceCreator.create(type);
-            this.queue.set(type, this.createQueueItem(type, composer));
+            this.queue.set(type, this.queueItemFactory.create(type, composer));
             return composer;
         }
+    }
+
+    has(type: ProvidenTypeSingular): boolean {
+        return this.queue.has(type);
     }
 
     markSolved(type: ProvidenTypeSingular) {
@@ -70,11 +79,11 @@ export class Queue {
                 protected output: BaseQueue<TypeComposer>) {
     }
 
-    markSolved(type: ClassType) {
+    markSolved(type: ProvidenTypeSingular) {
         this.output.markSolved(type);
     }
 
-    markInputSolved(type: ClassType) {
+    markInputSolved(type: ProvidenTypeSingular) {
         this.input.markSolved(type);
     }
 

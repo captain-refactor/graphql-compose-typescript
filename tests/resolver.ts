@@ -1,5 +1,5 @@
 import {$arg, $field, $mutation, $query, $resolver} from '../src';
-import {Resolver, SchemaComposer} from "graphql-compose";
+import {Resolver, schemaComposer, SchemaComposer} from "graphql-compose";
 import {ExecutionResult, graphql, GraphQLError, GraphQLSchema, GraphQLString} from "graphql";
 import {ArrayTypeNotSpecified, TypeNotSpecified} from "../src/graphq-compose-typescript";
 import {ExecutionResultDataDefault} from "graphql/execution/execute";
@@ -292,6 +292,7 @@ test('use type composer type', async t => {
     t.is(result.test.name, 'abcd');
 
 });
+
 test('array input type property on mutation resolver', async t => {
     @$input()
     class Form {
@@ -318,10 +319,3 @@ test('array input type property on mutation resolver', async t => {
     t.falsy(result.errors);
     t.is(result.data.submitForm, 'Thank you for your submission');
 });
-// test('array type not specified in input type', async t => {
-//     try {
-//
-//     } catch (e) {
-//         t.true(e instanceof ArrayTypeNotSpecified);
-//     }
-// });

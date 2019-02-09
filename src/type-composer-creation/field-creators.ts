@@ -1,4 +1,11 @@
-import {ClassType, DefaultContext, InputTypeFn, mapArguments, OutputTypeFn, TypeFn} from "../graphq-compose-typescript";
+import {
+    ArgumentsMapper,
+    ClassType,
+    DefaultContext,
+    InputTypeFn,
+    OutputTypeFn,
+    TypeFn
+} from "../graphq-compose-typescript";
 import {StringKey} from "../utils";
 import {ArgumentTypeConvertor, PropertyTypeConvertor} from "../argument-type-convertor";
 import {
@@ -19,6 +26,7 @@ export interface FieldCreator {
 export class OutputFieldCreator implements FieldCreator {
 
     constructor(protected argumentsBuilder: ArgumentsBuilder,
+                protected argumentsMapper: ArgumentsMapper,
                 protected propertyTypeConvertor: PropertyTypeConvertor<ComposeOutputType<any, any>>,
                 protected propertyTypeKeeper: PropertyTypeKeeper,
                 protected schemaComposer: SchemaComposer<any>,
@@ -26,10 +34,11 @@ export class OutputFieldCreator implements FieldCreator {
     }
 
     protected createResolver<T>(constructor: ClassType<T>, key: StringKey<T>): GraphQLFieldResolver<T, any> {
-        let paramsNamesKeeper = this.paramsNamesKeeper;
+        let method: Function = constructor.prototype[key] as any;
+        const paramNames = this.paramsNamesKeeper.getParamNames(constructor, key);
         return (source: T, args) => {
-            let method: Function = constructor.prototype[key] as any;
-            return method.bind(source)(...mapArguments(args, paramsNamesKeeper.getParamNames(constructor, key)));
+            const functionArguments = this.argumentsMapper.mapArguments(args, paramNames);
+            return method.bind(source)(...functionArguments);
         };
     }
 
@@ -48,12 +57,12 @@ export class OutputFieldCreator implements FieldCreator {
 
 export class InputFieldCreator implements FieldCreator {
 
-    constructor(protected typeMapper: PropertyTypeConvertor<ComposeInputType>,
+    constructor(protected propertyTypeConvertor: PropertyTypeConvertor<ComposeInputType>,
                 protected schemaComposer: SchemaComposer<any>) {
     }
 
     createField<T>(constructor: ClassType<T>, typeFn: InputTypeFn, key: StringKey<T>): ComposeInputFieldConfig {
-        const type = this.typeMapper.getPropertyType(constructor, key, typeFn);
+        const type = this.propertyTypeConvertor.getPropertyType(constructor, key, typeFn);
         return {
             type
         }

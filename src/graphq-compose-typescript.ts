@@ -9,14 +9,13 @@ import {
 import {ArgumentsBuilder, ParamsNamesKeeper} from "./arguments-builder";
 import {ResolverBuilder, ResolverSpecStorage} from "./resolver-builder";
 import {FieldSpecKeeper} from "./field-spec";
-import {BaseQueue, createInputQueueItem, createOutputQueueItem, Queue} from "./type-composer-creation/queue";
+import {BaseQueue, InputTypeQueueItem, OutputTypeQueueItem, Queue} from "./type-composer-creation/queue";
 import {TypeNameKeeper} from "./type-name";
 import {QueueSolver} from "./type-composer-creation/queue-solver";
 import {InputTypeSpecKeeper} from "./input-type-spec";
 import {PropertyTypeKeeper} from "./metadata";
 import {ArgumentTypeConvertor, PropertyTypeConvertor} from "./argument-type-convertor";
 import {Mounter} from "./mounting/mounter";
-import {TypeNameConvertor} from "./mounting/type-name-convertor";
 import {MountPointSpecKeeper} from "./mounting/mountpoint-spec-keeper";
 import {
     InputComposerCreator,
@@ -26,6 +25,7 @@ import {
 import {InputFieldCreator, OutputFieldCreator} from "./type-composer-creation/field-creators";
 import {ComposerBuilder} from "./type-composer-creation/composer-builder";
 import {ProvidenTypeConvertor} from "./providenTypeConvertor";
+import {SourceArgSpecKeeper} from "./resolver/source-arg-spec-keeper";
 
 export type ProvidenOutputType = ComposeOutputType<any, any> | ClassType | Array<ClassType>;
 export type ProvidenInputType = ComposeInputType | ClassType | Array<ClassType>;
@@ -39,16 +39,17 @@ export interface DefaultContext<T> {
 
 }
 
-export function mapArguments(args: any, paramNames: string[]): any[] {
-    if (paramNames.length === 0) return [];
-    args = args || {};
-    let parameters = [];
-    for (const name of paramNames) {
-        parameters.push(args[name]);
+export class ArgumentsMapper {
+    mapArguments(args: any, paramNames: string[]): any[] {
+        if (paramNames.length === 0) return [];
+        args = args || {};
+        let parameters = [];
+        for (const name of paramNames) {
+            parameters.push(args[name]);
+        }
+        return parameters;
     }
-    return parameters;
 }
-
 
 export class TypeNotSpecified extends Error {
     constructor(constructor: Function, propertyName: string) {
@@ -103,32 +104,62 @@ export class GraphqlComposeTypescript {
 
     static create(schemaComposer: SchemaComposer<any>) {
         const classSpecialist = new ClassSpecialist();
-        const nameConvertor = new TypeNameConvertor(classSpecialist);
         const ptk = new PropertyTypeKeeper();
         const fieldSpecKeeper = new FieldSpecKeeper();
         const inputTypeSpecKeeper = new InputTypeSpecKeeper();
         const typeNameKeeper = new TypeNameKeeper(inputTypeSpecKeeper);
-        const inputComposerCreator = new InputComposerCreator(schemaComposer, typeNameKeeper);
-        const outputComposerCreator = new OutputComposerCreator(schemaComposer, typeNameKeeper);
-        const inputTypeComposerBaseQueue = new BaseQueue<InputTypeComposer>(inputComposerCreator, createInputQueueItem);
-        const typeComposerBaseQueue = new BaseQueue<TypeComposer>(outputComposerCreator, createOutputQueueItem);
+        const inputComposerCreator = new InputComposerCreator(schemaComposer, typeNameKeeper, classSpecialist);
+        const outputComposerCreator = new OutputComposerCreator(schemaComposer, typeNameKeeper, classSpecialist);
+        const inputTypeComposerBaseQueue = new BaseQueue<InputTypeComposer>(inputComposerCreator, InputTypeQueueItem);
+        const typeComposerBaseQueue = new BaseQueue<TypeComposer>(outputComposerCreator, OutputTypeQueueItem);
         const queue = new Queue(inputTypeComposerBaseQueue, typeComposerBaseQueue);
-        const providenInputTypeConvertor = new ProvidenTypeConvertor<ComposeInputType>(classSpecialist, fieldSpecKeeper, inputTypeComposerBaseQueue, inputComposerCreator);
-        const providenOutputTypeConvertor = new ProvidenTypeConvertor<ComposeOutputType<any, any>>(classSpecialist, fieldSpecKeeper, typeComposerBaseQueue, outputComposerCreator);
-        const typeMapper = new ArgumentTypeConvertor(ptk, providenInputTypeConvertor);
+        const providenInputTypeConvertor = new ProvidenTypeConvertor<ComposeInputType>(
+            classSpecialist,
+            fieldSpecKeeper,
+            inputTypeComposerBaseQueue,
+            inputComposerCreator, schemaComposer);
+        const providenOutputTypeConvertor = new ProvidenTypeConvertor<ComposeOutputType<any, any>>(
+            classSpecialist,
+            fieldSpecKeeper,
+            typeComposerBaseQueue,
+            outputComposerCreator,
+            schemaComposer);
+        const argumentTypeConvertor = new ArgumentTypeConvertor(ptk, providenInputTypeConvertor);
         const paramsNamesKeeper = new ParamsNamesKeeper();
-        const argumentsBuilder = new ArgumentsBuilder(typeMapper, paramsNamesKeeper);
-        const propertyOutputTypeConvertor = new PropertyTypeConvertor<ComposeOutputType<any, any>>(providenOutputTypeConvertor, ptk);
-        const outputFieldCreator = new OutputFieldCreator(argumentsBuilder, propertyOutputTypeConvertor, ptk, schemaComposer, paramsNamesKeeper);
-        const typeComposerComposerBuilder = new ComposerBuilder<TypeComposer>(fieldSpecKeeper, schemaComposer, outputFieldCreator);
+        const argumentsBuilder = new ArgumentsBuilder(argumentTypeConvertor, paramsNamesKeeper);
+        const propertyOutputTypeConvertor = new PropertyTypeConvertor<ComposeOutputType<any, any>>(
+            providenOutputTypeConvertor,
+            ptk);
+        const argumentsMapper = new ArgumentsMapper();
+        const outputFieldCreator = new OutputFieldCreator(
+            argumentsBuilder,
+            argumentsMapper,
+            propertyOutputTypeConvertor,
+            ptk,
+            schemaComposer,
+            paramsNamesKeeper);
+        const typeComposerComposerBuilder = new ComposerBuilder<TypeComposer>(
+            fieldSpecKeeper,
+            schemaComposer,
+            outputFieldCreator);
         const propertyInputTypeConvertor = new PropertyTypeConvertor<ComposeInputType>(providenInputTypeConvertor, ptk);
         const inputFieldCreator = new InputFieldCreator(propertyInputTypeConvertor, schemaComposer);
-        const inputTypeComposerComposerBuilder = new ComposerBuilder<InputTypeComposer>(fieldSpecKeeper, schemaComposer, inputFieldCreator);
+        const inputTypeComposerComposerBuilder = new ComposerBuilder<InputTypeComposer>(
+            fieldSpecKeeper,
+            schemaComposer,
+            inputFieldCreator);
         const typeComposerCreator = new ComposerCreator(outputComposerCreator, inputComposerCreator,
             typeComposerComposerBuilder, inputTypeComposerComposerBuilder);
         const resolverSpecStorage = new ResolverSpecStorage();
-        const queueSolver = new QueueSolver(queue, typeComposerComposerBuilder, inputTypeComposerComposerBuilder);
-        const resolverBuilder = new ResolverBuilder(propertyOutputTypeConvertor, argumentsBuilder, queueSolver, resolverSpecStorage, paramsNamesKeeper, schemaComposer);
+        const queueSolver = new QueueSolver(queue, typeComposerComposerBuilder, inputTypeComposerComposerBuilder, classSpecialist);
+        const resolverBuilder = new ResolverBuilder(propertyOutputTypeConvertor,
+            argumentsBuilder,
+            argumentsMapper,
+            queueSolver,
+            resolverSpecStorage,
+            paramsNamesKeeper,
+            new SourceArgSpecKeeper(),
+            schemaComposer);
         const mountPointSpecKeeper = new MountPointSpecKeeper();
         const mounter = new Mounter(providenOutputTypeConvertor, resolverBuilder, classSpecialist, mountPointSpecKeeper);
         return new GraphqlComposeTypescript(schemaComposer, mounter, typeComposerCreator, resolverBuilder, queueSolver);

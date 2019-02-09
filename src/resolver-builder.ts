@@ -1,10 +1,11 @@
-import {ClassType, mapArguments, OutputTypeFn} from "./graphq-compose-typescript";
+import {ArgumentsMapper, ClassType, OutputTypeFn} from "./graphq-compose-typescript";
 import {ComposeOutputType, Resolver, SchemaComposer} from "graphql-compose";
 import {getConstructor, StringKey} from "./utils";
 import {ArgumentsBuilder, ParamsNamesKeeper} from "./arguments-builder";
 import {QueueSolver} from "./type-composer-creation/queue-solver";
 import {ArgumentTypeConvertor, PropertyTypeConvertor} from "./argument-type-convertor";
 import {ProvidenTypeConvertor} from "./providenTypeConvertor";
+import {SourceArgSpecKeeper} from "./resolver/source-arg-spec-keeper";
 
 export const RESOLVER_SPECS = Symbol.for('resolver specifications');
 
@@ -33,11 +34,13 @@ export class ResolverSpecStorage {
 
 
 export class ResolverBuilder {
-    constructor(protected typeMapper: PropertyTypeConvertor<ComposeOutputType<any, any>>,
+    constructor(protected propertyTypeConvertor: PropertyTypeConvertor<ComposeOutputType<any, any>>,
                 protected argumentsBuilder: ArgumentsBuilder,
+                protected argumentsMapper: ArgumentsMapper,
                 protected queueSolver: QueueSolver,
                 protected storage: ResolverSpecStorage,
                 protected paramsNamesKeeper: ParamsNamesKeeper,
+                protected sourceArgSpecKeeper: SourceArgSpecKeeper,
                 protected schemaComposer: SchemaComposer<any>) {
     }
 
@@ -45,16 +48,25 @@ export class ResolverBuilder {
         let constructor = getConstructor(instance);
         let spec = this.storage.getResolverSpec(constructor, method);
         const {typeFn} = spec;
-        const type = this.typeMapper.getPropertyType(constructor, method, typeFn);
+        const type = this.propertyTypeConvertor.getPropertyType(constructor, method, typeFn);
         let args = this.argumentsBuilder.getArguments(constructor, method);
         this.queueSolver.solve();
-        const paramsNamesKeeper = this.paramsNamesKeeper;
+        const paramNames = this.paramsNamesKeeper.getParamNames(constructor, method);
+        const sourceSpec = this.sourceArgSpecKeeper.getMethodSourceArgSpec(constructor, method);
+
         return new this.schemaComposer.Resolver({
             name: method,
             type,
             args,
-            async resolve(rp) {
-                let parameters = mapArguments(rp.args, paramsNamesKeeper.getParamNames(constructor, method));
+            resolve: async (rp) => {
+                const parameters = this.argumentsMapper.mapArguments(rp.args, paramNames);
+                if (sourceSpec) {
+                    let source = rp.source;
+                    if (source && sourceSpec.property) {
+                        source = source[sourceSpec.property];
+                    }
+                    parameters[sourceSpec.parameterIndex] = source;
+                }
                 return await (instance[method] as any)(...parameters);
             }
         });
