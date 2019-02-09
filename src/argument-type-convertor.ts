@@ -1,12 +1,11 @@
 import {PropertyTypeKeeper} from "./metadata";
-import {ComposeInputType, ComposeOutputType} from "graphql-compose";
+import {ComposeInputType} from "graphql-compose";
 import {StringKey} from "./utils";
 import {
     ArrayTypeNotSpecified,
     ClassType,
     InputTypeFn, ProvidenInputType,
     ProvidenOutputType,
-    OutputTypeFn,
     TypeNotSpecified, TypeFn, ProvidenType
 } from "./graphq-compose-typescript";
 import {ComposeType, ProvidenTypeConvertor} from "./providenTypeConvertor";

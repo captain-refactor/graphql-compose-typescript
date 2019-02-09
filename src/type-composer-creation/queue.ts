@@ -67,14 +67,6 @@ export class Queue {
                 protected output: BaseQueue<TypeComposer>) {
     }
 
-    addOutput(type: ClassType): TypeComposer {
-        return this.output.add(type);
-    }
-
-    addInput(type: ClassType): InputTypeComposer {
-        return this.input.add(type);
-    }
-
     markSolved(type: ClassType) {
         this.output.markSolved(type);
     }
