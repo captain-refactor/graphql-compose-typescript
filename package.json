@@ -15,13 +15,15 @@
     "check:watch": "tsc --noEmit -w",
     "build": "tsc",
     "prepublish": "npm run build",
-    "coverage-report": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
+    "coverage-report": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
+    "prettier": "prettier ./src/**/*.ts ./tests/**/*.ts --write"
   },
   "keywords": [],
   "author": "Jan Kremeň",
   "license": "MIT",
   "dependencies": {
-    "immutable": "^4.0.0-rc.12"
+    "immutable": "^4.0.0-rc.12",
+    "prettier": "^1.16.4"
   },
   "devDependencies": {
     "@types/graphql": "^14.0.5",

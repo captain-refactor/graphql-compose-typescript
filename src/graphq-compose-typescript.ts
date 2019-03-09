@@ -7,7 +7,7 @@ import {
 } from "graphql-compose";
 
 import {ArgumentsBuilder, ParamsNamesKeeper} from "./arguments-builder";
-import {ResolverBuilder, ResolverSpecStorage} from "./resolver-builder";
+import {ResolverBuilder, ResolverSpecStorage, WrapResolverSpecStorage} from "./resolver-builder";
 import {FieldSpecKeeper} from "./field-spec";
 import {BaseQueue, InputTypeQueueItem, OutputTypeQueueItem, Queue} from "./type-composer-creation/queue";
 import {TypeNameKeeper} from "./type-name";
@@ -76,7 +76,6 @@ export class ClassSpecialist {
 
 
 export class GraphqlComposeTypescript {
-
     constructor(public readonly schemaComposer: SchemaComposer<any>,
                 protected mounter: Mounter,
                 protected typeComposerCreator: ComposerCreator,
@@ -161,7 +160,7 @@ export class GraphqlComposeTypescript {
             paramsNamesKeeper,
             new SourceArgSpecKeeper(),
             new ContextSpecKeeper(),
-            schemaComposer);
+            schemaComposer,new WrapResolverSpecStorage());
         const mountPointSpecKeeper = new MountPointSpecKeeper();
         const mounter = new Mounter(providenOutputTypeConvertor, resolverBuilder, classSpecialist, mountPointSpecKeeper);
         return new GraphqlComposeTypescript(schemaComposer, mounter, typeComposerCreator, resolverBuilder, queueSolver);
