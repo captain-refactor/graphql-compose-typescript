@@ -1,9 +1,7 @@
 import { $arg, $field, $mutation, $query, $resolver } from "../src";
 import {
   Resolver,
-  schemaComposer,
   SchemaComposer,
-  TypeComposer
 } from "graphql-compose";
 import {
   ExecutionResult,
