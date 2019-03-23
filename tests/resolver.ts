@@ -298,7 +298,7 @@ test("resolve method field even on plain objects", async t => {
 });
 
 test("use type composer type", async t => {
-  const BookTC = t.context.schemaComposer.TypeComposer.create({
+  const BookTC = t.context.schemaComposer.createObjectTC({
     name: "Book",
     fields: {
       pagesCount: "Int",

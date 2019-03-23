@@ -3,7 +3,7 @@ import {
     ComposeOutputType, InputTypeComposer,
     Resolver, schemaComposer,
     SchemaComposer,
-    TypeComposer
+    ObjectTypeComposer
 } from "graphql-compose";
 
 import {ArgumentsBuilder, ParamsNamesKeeper} from "./arguments-builder";
@@ -88,7 +88,7 @@ export class GraphqlComposeTypescript {
         return this.schemaComposer;
     }
 
-    getComposer<T>(typeOrInstance: ClassType<T>): TypeComposer<T, DefaultContext<T>> {
+    getComposer<T>(typeOrInstance: ClassType<T>): ObjectTypeComposer<T, DefaultContext<T>> {
         let composer = this.typeComposerCreator.createTypeComposer(typeOrInstance);
         this.solver.solve();
         return composer;
@@ -111,7 +111,7 @@ export class GraphqlComposeTypescript {
         const inputComposerCreator = new InputComposerCreator(schemaComposer, typeNameKeeper, classSpecialist);
         const outputComposerCreator = new OutputComposerCreator(schemaComposer, typeNameKeeper, classSpecialist);
         const inputTypeComposerBaseQueue = new BaseQueue<InputTypeComposer>(inputComposerCreator, InputTypeQueueItem);
-        const typeComposerBaseQueue = new BaseQueue<TypeComposer>(outputComposerCreator, OutputTypeQueueItem);
+        const typeComposerBaseQueue = new BaseQueue<ObjectTypeComposer>(outputComposerCreator, OutputTypeQueueItem);
         const queue = new Queue(inputTypeComposerBaseQueue, typeComposerBaseQueue);
         const providenInputTypeConvertor = new ProvidenTypeConvertor<ComposeInputType>(
             classSpecialist,
@@ -138,7 +138,7 @@ export class GraphqlComposeTypescript {
             ptk,
             schemaComposer,
             paramsNamesKeeper);
-        const typeComposerComposerBuilder = new ComposerBuilder<TypeComposer>(
+        const typeComposerComposerBuilder = new ComposerBuilder<ObjectTypeComposer>(
             fieldSpecKeeper,
             schemaComposer,
             outputFieldCreator);

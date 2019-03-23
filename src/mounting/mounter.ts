@@ -3,7 +3,7 @@ import { ResolverBuilder } from "../resolver-builder";
 import {
   ComposeOutputType,
   SchemaComposer,
-  TypeComposer
+  ObjectTypeComposer
 } from "graphql-compose";
 import { getConstructor, isString } from "../utils";
 import { MountPoint, MountPointSpecKeeper } from "./mountpoint-spec-keeper";
@@ -30,11 +30,11 @@ export class Mounter {
     protected mountPointSpecKeeper: MountPointSpecKeeper
   ) {}
 
-  getTC(composer: SchemaComposer<any>, point: MountPoint): TypeComposer {
+  getTC(composer: SchemaComposer<any>, point: MountPoint): ObjectTypeComposer {
     if (this.classSpecialist.isClassType(point)) {
-      return this.typeConvertor.classToComposeType(point) as TypeComposer;
+      return this.typeConvertor.classToComposeType(point) as ObjectTypeComposer;
     } else if (isString(point)) {
-      return composer.getOrCreateTC(point);
+      return composer.getOrCreateOTC(point);
     } else if (Array.isArray(point)) {
       throw new InvalidMountPoint(point);
     } else {

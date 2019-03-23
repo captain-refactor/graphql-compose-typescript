@@ -1,12 +1,12 @@
 import { Queue, OutputTypeQueueItem } from "./queue";
-import { InputTypeComposer, TypeComposer } from "graphql-compose";
+import { InputTypeComposer, ObjectTypeComposer } from "graphql-compose";
 import { ComposerBuilder } from "./composer-builder";
 import { ClassSpecialist } from "../graphq-compose-typescript";
 
 export class QueueSolver {
   constructor(
     protected queue: Queue,
-    protected outputBuilder: ComposerBuilder<TypeComposer>,
+    protected outputBuilder: ComposerBuilder<ObjectTypeComposer>,
     protected inputBuilder: ComposerBuilder<InputTypeComposer>,
     protected classSpecialist: ClassSpecialist
   ) {}

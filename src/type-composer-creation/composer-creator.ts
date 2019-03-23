@@ -1,7 +1,7 @@
 import {
   InputTypeComposer,
   SchemaComposer,
-  TypeComposer
+  ObjectTypeComposer
 } from "graphql-compose";
 import { TypeNameKeeper } from "../type-name";
 import { ClassSpecialist, ClassType } from "../graphq-compose-typescript";
@@ -11,13 +11,13 @@ import { GraphqlComposeTypescriptError } from "../error";
 
 export class ComposerCreator {
   constructor(
-    protected outputCreator: ComposerInstanceCreator<TypeComposer>,
+    protected outputCreator: ComposerInstanceCreator<ObjectTypeComposer>,
     protected inputCreator: ComposerInstanceCreator<InputTypeComposer>,
-    protected outputBuilder: ComposerBuilder<TypeComposer>,
+    protected outputBuilder: ComposerBuilder<ObjectTypeComposer>,
     protected inputBuilder: ComposerBuilder<InputTypeComposer>
   ) {}
 
-  createTypeComposer<T>(constructor: ClassType<T>): TypeComposer<T> {
+  createTypeComposer<T>(constructor: ClassType<T>): ObjectTypeComposer<T> {
     const composer = this.outputCreator.create(constructor);
     this.outputBuilder.build(constructor, composer);
     return composer;
@@ -31,17 +31,19 @@ export class ComposerCreator {
 }
 
 export interface ComposerInstanceCreator<
-  C extends TypeComposer | InputTypeComposer
+  C extends ObjectTypeComposer | InputTypeComposer
 > {
   create(type: ProvidenTypeSingular): C;
 
   createFromString(text: string): C;
 }
 
-function isTypeComposer(type: ProvidenTypeSingular): type is TypeComposer {
+function isTypeComposer(
+  type: ProvidenTypeSingular
+): type is ObjectTypeComposer {
   return (
     !!(type as InputTypeComposer).getType &&
-    !!(type as TypeComposer).getInputTypeComposer
+    !!(type as ObjectTypeComposer).getInputTypeComposer
   );
 }
 
@@ -50,7 +52,7 @@ function isInputTypeComposer(
 ): type is InputTypeComposer {
   return (
     !!(type as InputTypeComposer).getType &&
-    !(type as TypeComposer).getInputTypeComposer
+    !(type as ObjectTypeComposer).getInputTypeComposer
   );
 }
 
@@ -64,7 +66,7 @@ export class InputComposerCreator
 
   create(type: ProvidenTypeSingular): InputTypeComposer {
     if (this.classSpecialist.isClassType(type)) {
-      return this.schemaComposer.InputTypeComposer.create({
+      return this.schemaComposer.createInputTC({
         name: this.nameKeeper.getInputTypeName(type),
         fields: undefined
       });
@@ -73,12 +75,12 @@ export class InputComposerCreator
     } else if (isTypeComposer(type)) {
       return type.getInputTypeComposer();
     } else {
-      return this.schemaComposer.InputTypeComposer.create(type);
+      return this.schemaComposer.createInputTC(type as any);
     }
   }
 
   createFromString(text: string): InputTypeComposer {
-    return this.schemaComposer.InputTypeComposer.create(text);
+    return this.schemaComposer.createInputTC(text);
   }
 }
 
@@ -91,16 +93,16 @@ export class CannotCreateTypeComposerFromITC extends GraphqlComposeTypescriptErr
 }
 
 export class OutputComposerCreator
-  implements ComposerInstanceCreator<TypeComposer> {
+  implements ComposerInstanceCreator<ObjectTypeComposer> {
   constructor(
     protected schemaComposer: SchemaComposer<any>,
     protected nameKeeper: TypeNameKeeper,
     protected classSpecialist: ClassSpecialist
   ) {}
 
-  create(type: ProvidenTypeSingular): TypeComposer {
+  create(type: ProvidenTypeSingular): ObjectTypeComposer {
     if (this.classSpecialist.isClassType(type)) {
-      return this.schemaComposer.TypeComposer.create({
+      return this.schemaComposer.createObjectTC({
         name: this.nameKeeper.getTypeName(type)
       });
     } else if (isTypeComposer(type)) {
@@ -108,11 +110,12 @@ export class OutputComposerCreator
     } else if (isInputTypeComposer(type)) {
       throw new CannotCreateTypeComposerFromITC(type);
     } else {
-      return this.schemaComposer.TypeComposer.create(type);
+      return type as any;
+      // return this.schemaComposer.createObjectTC(type);
     }
   }
 
-  createFromString(text: string): TypeComposer {
-    return this.schemaComposer.TypeComposer.create(text);
+  createFromString(text: string): ObjectTypeComposer {
+    return this.schemaComposer.createObjectTC(text);
   }
 }

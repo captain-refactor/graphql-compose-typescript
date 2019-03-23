@@ -1,7 +1,7 @@
 import { test } from "./_support";
 import { $mount } from "../src/decorators/mount";
 import { $arg, $field, $query, $resolver } from "../src";
-import { schemaComposer, SchemaComposer, TypeComposer } from "graphql-compose";
+import { schemaComposer, SchemaComposer, ObjectTypeComposer } from "graphql-compose";
 import { graphql } from "graphql";
 import { $input } from "../src/decorators/input";
 import { MountPointIsNull } from "../src";
@@ -102,7 +102,7 @@ test("mount resolver on object constructor", async t => {
 });
 
 test("compose", async t => {
-  let x = TypeComposer.create({
+  let x = ObjectTypeComposer.createTemp({
     name: "User",
     fields: {
       name: "String",

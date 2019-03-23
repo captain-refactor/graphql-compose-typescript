@@ -3,7 +3,7 @@ import {
   EnumTypeComposer,
   InputTypeComposer,
   Resolver,
-  TypeComposer
+  ObjectTypeComposer
 } from "graphql-compose";
 import { ComposerInstanceCreator } from "./composer-creator";
 import {
@@ -15,7 +15,7 @@ import {
   GraphQLUnionType
 } from "graphql";
 
-class QueueItem<C extends TypeComposer | InputTypeComposer> {
+class QueueItem<C extends ObjectTypeComposer | InputTypeComposer> {
   solved: boolean = false;
 
   constructor(public classType: ProvidenTypeSingular, public composer: C) {}
@@ -27,13 +27,13 @@ export class InputTypeQueueItem extends QueueItem<InputTypeComposer> {
   }
 }
 
-export class OutputTypeQueueItem extends QueueItem<TypeComposer> {
-  static create(classType: ProvidenTypeSingular, composer: TypeComposer) {
+export class OutputTypeQueueItem extends QueueItem<ObjectTypeComposer> {
+  static create(classType: ProvidenTypeSingular, composer: ObjectTypeComposer) {
     return new OutputTypeQueueItem(classType, composer);
   }
 }
 
-export interface QueueItemFactory<C extends TypeComposer | InputTypeComposer> {
+export interface QueueItemFactory<C extends ObjectTypeComposer | InputTypeComposer> {
   create(constructor: ProvidenTypeSingular, composer: C): QueueItem<C>;
 }
 
@@ -50,7 +50,7 @@ export type ProvidenTypeSingular = Exclude<
   | Resolver
 >;
 
-export class BaseQueue<C extends TypeComposer | InputTypeComposer> {
+export class BaseQueue<C extends ObjectTypeComposer | InputTypeComposer> {
   constructor(
     protected instanceCreator: ComposerInstanceCreator<C>,
     protected queueItemFactory: QueueItemFactory<C>
@@ -93,7 +93,7 @@ export class BaseQueue<C extends TypeComposer | InputTypeComposer> {
 export class Queue {
   constructor(
     protected input: BaseQueue<InputTypeComposer>,
-    protected output: BaseQueue<TypeComposer>
+    protected output: BaseQueue<ObjectTypeComposer>
   ) {}
 
   markSolved(type: ProvidenTypeSingular) {

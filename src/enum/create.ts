@@ -1,4 +1,4 @@
-import { EnumTypeComposer } from "graphql-compose";
+import {EnumTypeComposer, schemaComposer} from "graphql-compose";
 import { GraphQLEnumValueConfigMap } from "graphql";
 
 function createConfigMapFromEnumObj(enumObj) {
@@ -31,5 +31,5 @@ export function createEnum(name: string, enumObj: string[] | object) {
   } else {
     configMap = createConfigMapFromEnumObj(enumObj);
   }
-  return EnumTypeComposer.create({ name, values: configMap });
+  return EnumTypeComposer.createTemp({ name, values: configMap });
 }

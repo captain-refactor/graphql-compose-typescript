@@ -129,7 +129,7 @@ export class ResolverBuilder {
       method
     );
 
-    let resolver = new this.schemaComposer.Resolver({
+    let resolver = this.schemaComposer.createResolver({
       name: method,
       type,
       args,
