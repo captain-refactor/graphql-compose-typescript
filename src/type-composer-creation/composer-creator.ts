@@ -1,13 +1,14 @@
 import {
   InputTypeComposer,
   SchemaComposer,
-  ObjectTypeComposer
+  ObjectTypeComposer, EnumTypeComposer
 } from "graphql-compose";
 import { TypeNameKeeper } from "../type-name";
 import { ClassSpecialist, ClassType } from "../graphq-compose-typescript";
 import { ComposerBuilder } from "./composer-builder";
 import { ProvidenTypeSingular } from "./queue";
 import { GraphqlComposeTypescriptError } from "../error";
+import { isEnumType } from "graphql";
 
 export class ComposerCreator {
   constructor(
@@ -15,7 +16,8 @@ export class ComposerCreator {
     protected inputCreator: ComposerInstanceCreator<InputTypeComposer>,
     protected outputBuilder: ComposerBuilder<ObjectTypeComposer>,
     protected inputBuilder: ComposerBuilder<InputTypeComposer>
-  ) {}
+  ) {
+  }
 
   createTypeComposer<T>(constructor: ClassType<T>): ObjectTypeComposer<T> {
     const composer = this.outputCreator.create(constructor);
@@ -30,9 +32,7 @@ export class ComposerCreator {
   }
 }
 
-export interface ComposerInstanceCreator<
-  C extends ObjectTypeComposer | InputTypeComposer
-> {
+export interface ComposerInstanceCreator<C extends ObjectTypeComposer | InputTypeComposer | EnumTypeComposer> {
   create(type: ProvidenTypeSingular): C;
 
   createFromString(text: string): C;
@@ -62,7 +62,8 @@ export class InputComposerCreator
     protected schemaComposer: SchemaComposer<any>,
     protected nameKeeper: TypeNameKeeper,
     protected classSpecialist: ClassSpecialist
-  ) {}
+  ) {
+  }
 
   create(type: ProvidenTypeSingular): InputTypeComposer {
     if (this.classSpecialist.isClassType(type)) {
@@ -93,22 +94,19 @@ export class CannotCreateTypeComposerFromITC extends GraphqlComposeTypescriptErr
 }
 
 export class OutputComposerCreator
-  implements ComposerInstanceCreator<ObjectTypeComposer> {
+  implements ComposerInstanceCreator<ObjectTypeComposer | EnumTypeComposer> {
   constructor(
     protected schemaComposer: SchemaComposer<any>,
     protected nameKeeper: TypeNameKeeper,
     protected classSpecialist: ClassSpecialist
-  ) {}
+  ) {
+  }
 
   create(type: ProvidenTypeSingular): ObjectTypeComposer {
     if (this.classSpecialist.isClassType(type)) {
       return this.schemaComposer.createObjectTC({
         name: this.nameKeeper.getTypeName(type)
       });
-    } else if (isTypeComposer(type)) {
-      return type;
-    } else if (isInputTypeComposer(type)) {
-      throw new CannotCreateTypeComposerFromITC(type);
     } else {
       return type as any;
       // return this.schemaComposer.createObjectTC(type);

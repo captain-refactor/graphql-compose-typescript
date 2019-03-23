@@ -15,7 +15,7 @@ import {
   GraphQLUnionType
 } from "graphql";
 
-class QueueItem<C extends ObjectTypeComposer | InputTypeComposer> {
+class QueueItem<C extends ObjectTypeComposer | InputTypeComposer | EnumTypeComposer> {
   solved: boolean = false;
 
   constructor(public classType: ProvidenTypeSingular, public composer: C) {}
