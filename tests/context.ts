@@ -23,3 +23,24 @@ test("use context", async t => {
   t.falsy(result.errors);
   t.is(result.data.helloContext, "Hello User");
 });
+
+test("get context subproperty", async t => {
+  class Service {
+    @$query()
+    helloContext(@$ctx("name") name): string {
+      return `Hello ${name}`;
+    }
+  }
+
+  const schemaComposer = t.context.compose.mountInstances([new Service()]);
+  const schema = schemaComposer.buildSchema();
+  const result = await graphql({
+    schema,
+    source: `{
+            helloContext        
+        }`,
+    contextValue: { name: "User" }
+  });
+  t.falsy(result.errors);
+  t.is(result.data.helloContext, "Hello User");
+});

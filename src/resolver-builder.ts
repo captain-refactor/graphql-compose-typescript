@@ -15,6 +15,7 @@ import { QueueSolver } from "./type-composer-creation/queue-solver";
 import { PropertyTypeConvertor } from "./argument-type-convertor";
 import { SourceArgSpecKeeper } from "./resolver/source-arg-spec-keeper";
 import { ContextSpecKeeper } from "./context/context-spec-keeper";
+import _ = require("lodash");
 
 export const RESOLVER_SPECS = Symbol.for("resolver specifications");
 
@@ -123,7 +124,7 @@ export class ResolverBuilder {
       constructor,
       method
     );
-    const contextIndex = this.contextSpecKeeper.getContextParameterIndex(
+    const config = this.contextSpecKeeper.getContextParameterIndex(
       constructor,
       method
     );
@@ -144,18 +145,22 @@ export class ResolverBuilder {
           }
           parameters[sourceSpec.parameterIndex] = source;
         }
-        if (contextIndex != null) {
-          parameters[contextIndex] = rp.context;
+        if (config != null) {
+          let value = rp.context;
+          if (config.get) {
+            value = _.get(rp.context, config.get);
+          }
+          parameters[config.position] = value;
         }
         return await (instance[method] as any)(...parameters);
       }
     });
-      const specs = this.wrapStorage.getSpecs(constructor, method);
-      if(specs) {
-          for (let wrapSpec of specs) {
-              resolver = resolver.wrap(wrapSpec.wrapper);
-          }
+    const specs = this.wrapStorage.getSpecs(constructor, method);
+    if (specs) {
+      for (let wrapSpec of specs) {
+        resolver = resolver.wrap(wrapSpec.wrapper);
       }
+    }
     return resolver;
   }
 }
