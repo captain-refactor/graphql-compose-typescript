@@ -12,3 +12,10 @@ test("create enum type", t => {
   t.is(enumTC.getField("to-do").value, "0");
   t.pass();
 });
+
+test('create enum from array', t =>{
+  let values = ['a','b','c'];
+  let enumTC = createEnum('State', values);
+  t.deepEqual(enumTC.getFieldNames(), values);
+  t.pass();
+});

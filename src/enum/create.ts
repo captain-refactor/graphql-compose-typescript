@@ -22,6 +22,7 @@ function createFromArray(values: string[]) {
   for (let value of values) {
     result[value] = { value };
   }
+  return result;
 }
 
 export function createEnum(name: string, enumObj: string[] | object) {
