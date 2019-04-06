@@ -12,7 +12,7 @@ let injector: Injector = ReflectiveInjector.resolveAndCreate([
         name: "ObjectTypeComposer",
         fields: {
           x: {
-            type: "String",
+            type: "String"
           }
         }
       });
@@ -45,7 +45,7 @@ test("use string field types", async t => {
       {
         getThing {
           name
-          something{
+          something {
             x
           }
         }

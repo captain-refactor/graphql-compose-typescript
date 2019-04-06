@@ -1,7 +1,8 @@
 import {
   InputTypeComposer,
   SchemaComposer,
-  ObjectTypeComposer, EnumTypeComposer
+  ObjectTypeComposer,
+  EnumTypeComposer
 } from "graphql-compose";
 import { TypeNameKeeper } from "../type-name";
 import { ClassSpecialist, ClassType } from "../graphq-compose-typescript";
@@ -16,8 +17,7 @@ export class ComposerCreator {
     protected inputCreator: ComposerInstanceCreator<InputTypeComposer>,
     protected outputBuilder: ComposerBuilder<ObjectTypeComposer>,
     protected inputBuilder: ComposerBuilder<InputTypeComposer>
-  ) {
-  }
+  ) {}
 
   createTypeComposer<T>(constructor: ClassType<T>): ObjectTypeComposer<T> {
     const composer = this.outputCreator.create(constructor);
@@ -32,7 +32,9 @@ export class ComposerCreator {
   }
 }
 
-export interface ComposerInstanceCreator<C extends ObjectTypeComposer | InputTypeComposer | EnumTypeComposer> {
+export interface ComposerInstanceCreator<
+  C extends ObjectTypeComposer | InputTypeComposer | EnumTypeComposer
+> {
   create(type: ProvidenTypeSingular): C;
 
   createFromString(text: string): C;
@@ -62,8 +64,7 @@ export class InputComposerCreator
     protected schemaComposer: SchemaComposer<any>,
     protected nameKeeper: TypeNameKeeper,
     protected classSpecialist: ClassSpecialist
-  ) {
-  }
+  ) {}
 
   create(type: ProvidenTypeSingular): InputTypeComposer {
     if (this.classSpecialist.isClassType(type)) {
@@ -99,8 +100,7 @@ export class OutputComposerCreator
     protected schemaComposer: SchemaComposer<any>,
     protected nameKeeper: TypeNameKeeper,
     protected classSpecialist: ClassSpecialist
-  ) {
-  }
+  ) {}
 
   create(type: ProvidenTypeSingular): ObjectTypeComposer {
     if (this.classSpecialist.isClassType(type)) {

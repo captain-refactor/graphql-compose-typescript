@@ -1,4 +1,4 @@
-import {EnumTypeComposer, schemaComposer} from "graphql-compose";
+import { EnumTypeComposer, schemaComposer } from "graphql-compose";
 import { GraphQLEnumValueConfigMap } from "graphql";
 
 function createConfigMapFromEnumObj(enumObj) {

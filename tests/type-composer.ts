@@ -1,7 +1,9 @@
 import { test } from "./_support";
 import { $arg, $field } from "../src";
-import { schemaComposer } from "graphql-compose";
+import { ObjectTypeComposer, schemaComposer } from "graphql-compose";
 import { graphql } from "graphql";
+import { $wrapResolver } from "../src/decorators/wrap-resolver";
+import { $wrapTC } from "../src/decorators/wrap-otc";
 
 test("create basic fields", t => {
   class User {
@@ -87,13 +89,11 @@ test("create field on class with arguments", async t => {
 
 test("inheritance", t => {
   class A {
-    @$field()
-    x: boolean;
+    @$field() x: boolean;
   }
 
   class B extends A {
-    @$field()
-    y: boolean;
+    @$field() y: boolean;
   }
 
   let AComposer = t.context.compose.getComposer(A);
@@ -103,4 +103,38 @@ test("inheritance", t => {
   let BComposer = t.context.compose.getComposer(B);
   t.true(BComposer.hasField("x"));
   t.true(BComposer.hasField("y"));
+});
+
+test("required field types", async t => {
+  class A {
+    @$field(() => "String!") a: string;
+    @$field(() => "String") b: string;
+  }
+
+  let AComposer = t.context.compose.getComposer(A);
+  t.true(AComposer.hasField("a"));
+  t.false(AComposer.isFieldNonNull("b"));
+});
+
+test("boolean", async t => {
+  class A {
+    @$field() a: boolean;
+  }
+
+  let AComposer = t.context.compose.getComposer(A);
+  t.true(AComposer.hasField("a"));
+  t.log(AComposer.getFieldType("a"));
+});
+
+
+test("wrap tc", async t => {
+  @$wrapTC((otc: ObjectTypeComposer) => otc.addFields({
+    y: "String"
+  }))
+  class A {
+    @$field() x: string;
+  }
+
+  let aTC = t.context.compose.getComposer(A);
+  t.true(aTC.hasField("y"));
 });

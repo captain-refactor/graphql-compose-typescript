@@ -57,6 +57,8 @@ export class ProvidenTypeConvertor<
       return "Date" as any;
     } else if (typeClass === Number) {
       return "Float" as any;
+    } else if (typeClass === Boolean) {
+      return "Boolean" as any;
     } else if (this.fieldSpec.isDecorated(typeClass)) {
       return this.queue.add(typeClass);
     } else {

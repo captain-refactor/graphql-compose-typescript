@@ -1,8 +1,5 @@
 import { $arg, $field, $mutation, $query, $resolver } from "../src";
-import {
-  Resolver,
-  SchemaComposer,
-} from "graphql-compose";
+import { Resolver, SchemaComposer } from "graphql-compose";
 import {
   ExecutionResult,
   graphql,
@@ -18,7 +15,7 @@ import { ExecutionResultDataDefault } from "graphql/execution/execute";
 import { ExecutionContext } from "ava";
 import { test } from "./_support";
 import { $input } from "../src/decorators/input";
-import { $wrap } from "../src/decorators/wrap";
+import { $wrapResolver } from "../src/decorators/wrap-resolver";
 
 async function testResolver(
   t: ExecutionContext,
@@ -365,7 +362,7 @@ test("array input type property on mutation resolver", async t => {
 test("wrap resolver", async t => {
   class FormService {
     @$query()
-    @$wrap(r => r.setResolve(() => "SUCCESS"))
+    @$wrapResolver(r => r.setResolve(() => "SUCCESS"))
     hello(): string {
       return "FAIL";
     }
@@ -383,5 +380,27 @@ test("wrap resolver", async t => {
     `
   );
   t.pass();
-  t.is(result.data.hello, 'SUCCESS');
+  t.is(result.data.hello, "SUCCESS");
+});
+
+test("boolean type", async t => {
+  class FormService {
+    @$query()
+    hello(): Boolean {
+      return true;
+    }
+  }
+
+  let schema = t.context.compose
+    .mountInstances([new FormService()])
+    .buildSchema();
+  let result = await graphql(
+    schema,
+    `
+      {
+        hello
+      }
+    `
+  );
+  t.is(result.data.hello, true);
 });

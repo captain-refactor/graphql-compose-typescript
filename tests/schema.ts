@@ -1,7 +1,11 @@
 import { test } from "./_support";
 import { $mount } from "../src/decorators/mount";
 import { $arg, $field, $query, $resolver } from "../src";
-import { schemaComposer, SchemaComposer, ObjectTypeComposer } from "graphql-compose";
+import {
+  schemaComposer,
+  SchemaComposer,
+  ObjectTypeComposer
+} from "graphql-compose";
 import { graphql } from "graphql";
 import { $input } from "../src/decorators/input";
 import { MountPointIsNull } from "../src";

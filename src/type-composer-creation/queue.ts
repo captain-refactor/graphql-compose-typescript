@@ -15,7 +15,9 @@ import {
   GraphQLUnionType
 } from "graphql";
 
-class QueueItem<C extends ObjectTypeComposer | InputTypeComposer | EnumTypeComposer> {
+class QueueItem<
+  C extends ObjectTypeComposer | InputTypeComposer | EnumTypeComposer
+> {
   solved: boolean = false;
 
   constructor(public classType: ProvidenTypeSingular, public composer: C) {}
@@ -33,7 +35,9 @@ export class OutputTypeQueueItem extends QueueItem<ObjectTypeComposer> {
   }
 }
 
-export interface QueueItemFactory<C extends ObjectTypeComposer | InputTypeComposer> {
+export interface QueueItemFactory<
+  C extends ObjectTypeComposer | InputTypeComposer
+> {
   create(constructor: ProvidenTypeSingular, composer: C): QueueItem<C>;
 }
 

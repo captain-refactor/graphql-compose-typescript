@@ -34,6 +34,8 @@ test("use enum in object type", async t => {
     @$field(() => DatabaseStatusTC) status: DatabaseStatus;
   }
 
-  let statusField = t.context.compose.getComposer(ArangoDatabase).getField('status');
+  let statusField = t.context.compose
+    .getComposer(ArangoDatabase)
+    .getField("status");
   t.truthy(statusField);
 });
