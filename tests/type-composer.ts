@@ -1,8 +1,11 @@
 import { test } from "./_support";
-import { $arg, $field } from "../src";
-import { ObjectTypeComposer, schemaComposer } from "graphql-compose";
-import { graphql } from "graphql";
-import { $wrapResolver } from "../src/decorators/wrap-resolver";
+import { $arg, $field, $implements, $mount, $query, $resolver } from "../src";
+import {
+  InterfaceTypeComposer,
+  ObjectTypeComposer,
+  schemaComposer
+} from "graphql-compose";
+import { graphql, graphqlSync } from "graphql";
 import { $wrapTC } from "../src/decorators/wrap-otc";
 
 test("create basic fields", t => {
@@ -126,15 +129,52 @@ test("boolean", async t => {
   t.log(AComposer.getFieldType("a"));
 });
 
-
 test("wrap tc", async t => {
-  @$wrapTC((otc: ObjectTypeComposer) => otc.addFields({
-    y: "String"
-  }))
+  @$wrapTC((otc: ObjectTypeComposer) =>
+    otc.addFields({
+      y: "String"
+    })
+  )
   class A {
     @$field() x: string;
   }
 
   let aTC = t.context.compose.getComposer(A);
   t.true(aTC.hasField("y"));
+});
+
+test.skip("implement interface", async t => {
+  let IFace = InterfaceTypeComposer.createTemp({
+    name: "Related",
+    fields: {
+      relationKey: "String!"
+    }
+  });
+
+  @$implements(IFace)
+  class Item {
+    @$field(() => "String!") relationKey: string;
+    @$field() relationThing?: string;
+  }
+
+  class Service {
+
+
+    @$resolver()
+    @$mount(() => IFace)
+    relationThing():string {
+      return 'SUCCESS'
+    }
+
+    @$query()
+    root(): Item {
+      return {
+        relationKey: "a"
+      };
+    }
+  }
+
+  let schema = t.context.compose.mountInstances([new Service()]).buildSchema();
+  let result = await graphql(schema,`{root{relationKey relationThing}}`);
+  t.pass();
 });

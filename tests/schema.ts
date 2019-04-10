@@ -4,7 +4,9 @@ import { $arg, $field, $query, $resolver } from "../src";
 import {
   schemaComposer,
   SchemaComposer,
-  ObjectTypeComposer
+  ObjectTypeComposer,
+  ComposeFieldConfig,
+  ComposeFieldConfigAsObject
 } from "graphql-compose";
 import { graphql } from "graphql";
 import { $input } from "../src/decorators/input";
@@ -15,6 +17,7 @@ import {
 } from "../src/graphq-compose-typescript";
 import { $source } from "../src/decorators/source";
 import { InvalidMountPoint } from "../src/mounting/mounter";
+import { $extendField } from "../src/decorators/extend-field";
 
 test("build simple schema", async t => {
   class ServiceA {
@@ -300,4 +303,16 @@ test("source parameter", async t => {
   );
   t.falsy(result.errors);
   t.is(result.data.getUser.fullName, "Jan Kremen");
+});
+test("wrap field", async t => {
+  class User {
+    @$field()
+    @$extendField({ type: "Boolean" })
+    name: string;
+  }
+  const field: ComposeFieldConfigAsObject<
+    any,
+    any
+  > = t.context.compose.getComposer(User).getField("name") as any;
+  t.is(field.type, "Boolean");
 });

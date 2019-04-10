@@ -28,7 +28,8 @@ export class Mounter {
     protected resolverBuilder: ResolverBuilder,
     protected classSpecialist: ClassSpecialist,
     protected mountPointSpecKeeper: MountPointSpecKeeper
-  ) {}
+  ) {
+  }
 
   getTC(composer: SchemaComposer<any>, point: MountPoint): ObjectTypeComposer {
     if (this.classSpecialist.isClassType(point)) {
@@ -52,9 +53,7 @@ export class Mounter {
           if (!mountPointFn) throw new MountPointIsNull(constructor, key);
           const point = mountPointFn();
           if (!point) throw new MountPointIsNull(constructor, key);
-          this.getTC(composer, point).addFields({
-            [key]: resolver
-          });
+          this.getTC(composer, point).addFields({ [key]: resolver });
         }
       }
     }
