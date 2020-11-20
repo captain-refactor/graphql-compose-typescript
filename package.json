@@ -24,7 +24,7 @@
   "dependencies": {
     "immutable": "^4.0.0-rc.12",
     "lodash": "^4.17.11",
-    "prettier": "^1.16.4"
+    "prettier": "^2.2.0"
   },
   "devDependencies": {
     "@types/graphql": "^14.0.5",
